@@ -28,6 +28,12 @@ export default function ViewPage() {
       : "skip"
   );
 
+  // Get selected project details (including completing team)
+  const selectedProject = useQuery(
+    api.projects.getProject,
+    selectedProjectId ? { projectId: selectedProjectId } : "skip"
+  );
+
   // Get all WOID data with teams and tickets
   const woidData = useQuery(
     api.woidAssignments.getAllWithDetails,
@@ -291,8 +297,23 @@ export default function ViewPage() {
                       const hasVoidTeam = addressData.woids.some(woid =>
                         woid.teams.some(team => team.status?.toLowerCase() === "void")
                       );
+                      
+                      // Check if the completing team is complete
+                      const completingTeamId = selectedProject?.completingTeamId;
+                      const isAddressComplete = completingTeamId
+                        ? addressData.woids.some(woid =>
+                            woid.teams.some(
+                              team =>
+                                team.taskForceId === completingTeamId &&
+                                team.status?.toLowerCase() === "complete"
+                            )
+                          )
+                        : false;
+                      
                       const addressRowClass = hasVoidTeam
                         ? "bg-orange-100 border-b-2 border-orange-300"
+                        : isAddressComplete
+                        ? "bg-green-50 border-b-2 border-green-300"
                         : "bg-purple-50 border-b-2 border-purple-200";
 
                       return (
@@ -360,11 +381,19 @@ export default function ViewPage() {
                               <td className="px-6 py-4 text-sm text-gray-900 border-r border-gray-300">
                                 {woid.teams.length > 0 ? (
                                   <div className="space-y-2">
-                                    {woid.teams.map((team) => (
-                                      <div key={team.taskForceId}>
-                                        <span className="font-medium">{team.taskForceName}</span>
-                                      </div>
-                                    ))}
+                                    {woid.teams.map((team) => {
+                                      const isCompletingTeam = team.taskForceId === selectedProject?.completingTeamId;
+                                      return (
+                                        <div key={team.taskForceId} className="flex items-center gap-2">
+                                          <span className="font-medium">{team.taskForceName}</span>
+                                          {isCompletingTeam && (
+                                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
+                                              COMPLETING
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 ) : (
                                   <span className="text-gray-400 italic">No teams assigned</span>

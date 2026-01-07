@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
 export default function SearchPage() {
   const { user: clerkUser } = useUser();
+  const router = useRouter();
   const [searchAddress, setSearchAddress] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,9 +39,9 @@ export default function SearchPage() {
 
   console.log("Projects:", projects);
 
-  // Search results
+  // Search results - simplified view
   const searchResults = useQuery(
-    api.addressSearch.searchByAddress,
+    api.addressSearch.searchSimplified,
     selectedProjectId && searchQuery
       ? {
         address: searchQuery,
@@ -158,115 +160,89 @@ export default function SearchPage() {
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
                   <p className="mt-2 text-gray-600">Loading...</p>
                 </div>
-              ) : searchResults?.woids.length === 0 && searchResults?.tickets.length === 0 ? (
+              ) : !searchResults || searchResults.length === 0 ? (
                 <div className="text-center py-8 text-gray-600">
                   <p>No results found for &quot;{searchQuery}&quot;</p>
                 </div>
               ) : (
-                <div className="space-y-6">
-                  {/* WOIDs Section */}
-                  {searchResults?.woids && searchResults.woids.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                        Work Orders ({searchResults.woids.length})
-                      </h2>
-                      <div className="space-y-4">
-                        {searchResults.woids.map(
-                          (
-                            woidData: {
-                              woid: string;
-                              address: string;
-                              teams: {
-                                taskForceName: string;
-                                lastUpdated: number;
-                                status: string;
-                              }[];
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                    Search Results ({searchResults.length})
+                  </h2>
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Address
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            WOID
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Latest Ticket
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Utility Statuses
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {searchResults.map((row: {
+                          address: string;
+                          woid: string;
+                          latestTicket: {
+                            ticketId: string;
+                            createdAt: number;
+                            utilityStatuses: { utilityCompany: string; status: string; updateDate: number }[];
+                          } | null;
+                        }) => (
+                          <tr
+                            key={`${row.address}-${row.woid}`}
+                            onClick={() =>
+                              router.push(
+                                `/search/detail?address=${encodeURIComponent(row.address)}&woid=${encodeURIComponent(row.woid)}&projectId=${selectedProjectId}`
+                              )
                             }
-                          ) => (
-                            <div
-                              key={woidData.woid}
-                              className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm"
-                            >
-                              <div className="flex items-center justify-between mb-4">
+                            className="hover:bg-purple-50 cursor-pointer transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {row.address}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {row.woid}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {row.latestTicket ? (
                                 <div>
-                                  <h3 className="text-lg font-semibold text-gray-900">
-                                    WOID: {woidData.woid}
-                                  </h3>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    Address: {woidData.address}
-                                  </p>
-                                </div>
-                              </div>
-
-                              {/* Teams */}
-                              {woidData.teams.length > 0 ? (
-                                <div>
-                                  <h4 className="text-sm font-medium text-gray-700 mb-2">Teams:</h4>
-                                  <div className="space-y-2">
-                                    {woidData.teams.map((team, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                                      >
-                                        <div>
-                                          <p className="font-medium text-gray-900">
-                                            {team.taskForceName}
-                                          </p>
-                                          <p className="text-xs text-gray-500 mt-1">
-                                            Last updated: {formatDate(team.lastUpdated)}
-                                          </p>
-                                        </div>
-                                        {formatStatus(team.status)}
-                                      </div>
-                                    ))}
+                                  <div className="font-medium text-purple-600">{row.latestTicket.ticketId}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {formatDate(row.latestTicket.createdAt)}
                                   </div>
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-500">No teams assigned</p>
+                                <span className="text-gray-400">No tickets</span>
                               )}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Tickets Section */}
-                  {searchResults?.tickets && searchResults.tickets.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                        Tickets ({searchResults.tickets.length})
-                      </h2>
-                      <div className="space-y-4">
-                        {searchResults.tickets.map(
-                          (
-                            ticket: {
-                              ticketId: string;
-                              assignedDate: number;
-                              woids: string[];
-                            }
-                          ) => (
-                            <div
-                              key={ticket.ticketId}
-                              className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h3 className="text-lg font-semibold text-gray-900">
-                                    {ticket.ticketId}
-                                  </h3>
-                                  <p className="text-sm text-gray-600 mt-1">
-                                    Assigned: {formatDate(ticket.assignedDate)}
-                                  </p>
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    WOIDs: {ticket.woids.join(", ")}
-                                  </p>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900">
+                              {row.latestTicket && row.latestTicket.utilityStatuses.length > 0 ? (
+                                <div className="space-y-1">
+                                  {row.latestTicket.utilityStatuses.map((utility, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <span className="font-medium text-xs">{utility.utilityCompany}:</span>
+                                      <span className="text-xs text-gray-600">{utility.status}</span>
+                                    </div>
+                                  ))}
                                 </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  )}
+                              ) : (
+                                <span className="text-gray-400">No updates</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>

@@ -15,6 +15,7 @@ interface ExcelRow {
 export default function UploadPage() {
   const { user: clerkUser } = useUser();
   const [selectedProjectId, setSelectedProjectId] = useState<Id<"projects"> | null>(null);
+  const [selectedCompletingTeamId, setSelectedCompletingTeamId] = useState<Id<"taskForces"> | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<{
@@ -38,6 +39,12 @@ export default function UploadPage() {
         organizationId,
       }
       : "skip"
+  );
+
+  // Get teams for the organization
+  const teams = useQuery(
+    api.taskForces.getTaskForces,
+    organizationId ? { organizationId } : "skip"
   );
 
   // Mutation for bulk insert
@@ -138,8 +145,8 @@ export default function UploadPage() {
   };
 
   const handleUpload = async () => {
-    if (!file || !selectedProjectId) {
-      alert("Please select a file and a project");
+    if (!file || !selectedProjectId || !selectedCompletingTeamId) {
+      alert("Please select a file, a project, and a completing team");
       return;
     }
 
@@ -247,6 +254,7 @@ export default function UploadPage() {
       const uploadResult = await bulkInsert({
         assignments,
         projectId: selectedProjectId,
+        completingTeamId: selectedCompletingTeamId,
       });
 
       setResult(uploadResult);
@@ -327,6 +335,46 @@ export default function UploadPage() {
             )}
           </div>
 
+          {/* Completing Team Selection */}
+          <div>
+            <label
+              htmlFor="completingTeam"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Completing Team <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="completingTeam"
+              value={selectedCompletingTeamId || ""}
+              onChange={(e) =>
+                setSelectedCompletingTeamId(e.target.value as Id<"taskForces"> | null)
+              }
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 bg-white text-gray-900 text-sm font-medium"
+              disabled={!organizationId || teams === undefined}
+              style={{
+                color: selectedCompletingTeamId ? '#111827' : '#6B7280'
+              }}
+            >
+              <option value="" className="text-gray-500">
+                {!organizationId
+                  ? "Loading user..."
+                  : teams === undefined
+                    ? "Loading teams..."
+                    : teams.length === 0
+                      ? "No teams available"
+                      : "Select completing team..."}
+              </option>
+              {teams?.map((team: { _id: Id<"taskForces">; name: string }) => (
+                <option key={team._id} value={team._id} className="text-gray-900">
+                  {team.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-gray-500">
+              The team whose completion status determines if an address is complete
+            </p>
+          </div>
+
           {/* File Upload */}
           <div>
             <label
@@ -388,7 +436,7 @@ export default function UploadPage() {
           {/* Upload Button */}
           <button
             onClick={handleUpload}
-            disabled={!file || !selectedProjectId || uploading}
+            disabled={!file || !selectedProjectId || !selectedCompletingTeamId || uploading}
             className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {uploading ? "Uploading..." : "Upload Assignments"}
