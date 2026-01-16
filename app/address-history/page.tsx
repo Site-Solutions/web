@@ -1,399 +1,592 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import {
+    ArrowLeft,
+    FileText,
+    Users,
+    Ticket,
+    Clock,
+    CheckCircle2,
+    Circle,
+    Filter,
+} from "lucide-react";
+import type { Id } from "@/convex/_generated/dataModel";
 
 export default function AddressHistoryPage() {
     const searchParams = useSearchParams();
     const address = searchParams.get("address");
     const projectId = searchParams.get("projectId") as Id<"projects"> | null;
-    const [activeTab, setActiveTab] = useState<"overview" | "teams" | "files" | "tickets">("overview");
+    const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
+    const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
 
-    const history = useQuery(
+    const historyData = useQuery(
         api.addressHistory.getAddressHistory,
         address && projectId ? { address, projectId } : "skip"
     );
+
+    if (!address || !projectId) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-red-500 text-5xl mb-4">⚠️</div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Missing Parameters</h1>
+                    <p className="text-gray-600">Address and Project ID are required.</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!historyData) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading address history...</p>
+                </div>
+            </div>
+        );
+    }
 
     const formatDate = (timestamp: number) => {
         return new Date(timestamp).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
+        });
+    };
+
+    const formatTime = (timestamp: number) => {
+        return new Date(timestamp).toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
         });
     };
 
-    if (!address || !projectId) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">Missing Parameters</h1>
-                    <p className="text-gray-600">Please provide an address and project ID.</p>
-                    <Link href="/view" className="mt-4 inline-block text-purple-600 hover:text-purple-800">
-                        ← Back to Search
-                    </Link>
-                </div>
-            </div>
-        );
+    // Build WOID-centric data structure
+    const woidTeamMap = new Map<string, Array<{ teamName: string; status: string; completionDate?: number }>>();
+
+    // Initialize WOIDs
+    for (const assignment of historyData.woidAssignments) {
+        if (!woidTeamMap.has(assignment.workOrderId)) {
+            woidTeamMap.set(assignment.workOrderId, []);
+        }
     }
 
-    if (history === undefined) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading address history...</p>
-                </div>
-            </div>
-        );
+  // Add team assignments (taskForceAssignments is already grouped by WOID)
+  for (const taskForceGroup of historyData.taskForceAssignments) {
+    const teams = taskForceGroup.teams.map((team: any) => ({
+      teamName: team.taskForceName,
+      status: team.status,
+      completionDate: team.completionDate,
+    }));
+    woidTeamMap.set(taskForceGroup.workOrderId, teams);
+  }
+
+  // Group reports by WOID (dailyReports is already grouped by WOID)
+  const reportsByWoid = new Map<string, Array<any>>();
+  for (const dr of historyData.dailyReports) {
+    reportsByWoid.set(dr.workOrderId, dr.reports);
+  }
+
+  // Group files by WOID
+  const filesByWoid = new Map<string, typeof historyData.files>();
+  for (const file of historyData.files) {
+    const woid = file.workOrderId;
+    if (!woid) continue;
+    if (!filesByWoid.has(woid)) {
+      filesByWoid.set(woid, []);
+    }
+    filesByWoid.get(woid)!.push(file);
+  }
+
+    // Calculate completion stats
+    let completeWoids = 0;
+    let voidWoids = 0;
+    let inProgressWoids = 0;
+
+    for (const [woid, teams] of woidTeamMap.entries()) {
+        const hasVoid = teams.some(t => t.status === "void");
+        const allComplete = teams.length > 0 && teams.every(t => t.status === "complete");
+
+        if (hasVoid) voidWoids++;
+        else if (allComplete) completeWoids++;
+        else inProgressWoids++;
     }
 
-    if (history === null) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">No Data Found</h1>
-                    <p className="text-gray-600">No history found for this address.</p>
-                    <Link href="/view" className="mt-4 inline-block text-purple-600 hover:text-purple-800">
-                        ← Back to Search
-                    </Link>
-                </div>
-            </div>
-        );
-    }
+    const totalWoids = woidTeamMap.size;
+    const completionPercentage = totalWoids > 0 ? Math.round((completeWoids / totalWoids) * 100) : 0;
 
-    // Build timeline from all activities
-    const timeline = [
-        ...history.dailyReports.flatMap((dr: any) =>
-            dr.reports.map((r: any) => ({
-                type: "report",
-                date: r._creationTime,
-                workOrderId: dr.workOrderId,
-                report: r,
-            }))
-        ),
-        ...history.tickets.flatMap((t: any) =>
-            t.updates.map((u: any) => ({
-                type: "ticket_update",
-                date: u._creationTime,
-                ticketId: t.ticketId,
-                update: u,
-            }))
-        ),
-    ].sort((a, b) => b.date - a.date);
+  // Build timeline
+  const timeline = [
+    ...historyData.dailyReports.flatMap((dr: { workOrderId: string; reports: Array<any> }) =>
+      dr.reports.map((report: any) => ({
+        type: "report" as const,
+        date: report._creationTime,
+        workOrderId: dr.workOrderId,
+        report,
+      }))
+    ),
+    ...historyData.tickets.flatMap((t: { ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) =>
+      t.updates.map((u: { _creationTime: number; utilityCompany: string; status: string }) => ({
+        type: "ticket_update" as const,
+        date: u._creationTime,
+        ticketId: t.ticketId,
+        update: u,
+      })),
+    ),
+  ]
+        .filter((item) => {
+            if (timelineFilter === "all") return true;
+            if (timelineFilter === "reports") return item.type === "report";
+            if (timelineFilter === "tickets") return item.type === "ticket_update";
+            return true;
+        })
+        .sort((a, b) => b.date - a.date);
 
-    // Group teams across all WOIDs
-    const allTeams = new Map();
-    history.taskForceAssignments.forEach((ta: any) => {
-        ta.teams.forEach((team: any) => {
-            if (!allTeams.has(team.taskForceId)) {
-                allTeams.set(team.taskForceId, {
-                    ...team,
-                    woids: [],
-                    reportCount: 0,
-                });
-            }
-            allTeams.get(team.taskForceId).woids.push(ta.workOrderId);
-        });
-    });
+    // Group timeline by date
+    const groupedTimeline = timeline.reduce(
+        (acc, item) => {
+            const dateKey = new Date(item.date).toDateString();
+            if (!acc[dateKey]) acc[dateKey] = [];
+            acc[dateKey].push(item);
+            return acc;
+        },
+        {} as Record<string, typeof timeline>
+    );
 
-    // Count reports per team
-    history.dailyReports.forEach((dr: any) => {
-        dr.reports.forEach((r: any) => {
-            const teamData = Array.from(allTeams.values()).find(
-                (t: any) => dr.workOrderId && t.woids.includes(dr.workOrderId)
-            );
-            if (teamData) {
-                teamData.reportCount++;
-            }
-        });
-    });
+    const getStatusColor = (status: string) => {
+        const s = status.toLowerCase();
+        if (s.includes("clear") || s.includes("marked")) return "bg-green-500";
+        if (s.includes("pending") || s.includes("wait")) return "bg-yellow-500";
+        return "bg-gray-500";
+    };
 
-    const tabs = [
-        { id: "overview", label: "Overview", icon: "📊" },
-        { id: "teams", label: "Teams & Work", icon: "👥" },
-        { id: "files", label: "Files", icon: "📁", count: history.summary.totalFiles },
-        { id: "tickets", label: "Tickets", icon: "🎫", count: history.summary.totalTickets },
-    ];
+    const getWoidStatus = (woid: string) => {
+        const teams = woidTeamMap.get(woid) || [];
+        const hasVoid = teams.some(t => t.status === "void");
+        const allComplete = teams.length > 0 && teams.every(t => t.status === "complete");
+
+        if (hasVoid) return "void";
+        if (allComplete) return "complete";
+        if (teams.length > 0) return "in_progress";
+        return "not_started";
+    };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-6">
-                    <Link href="/view" className="text-purple-600 hover:text-purple-800 mb-4 inline-block">
-                        ← Back to Search
-                    </Link>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{history.address}</h1>
-                    <p className="text-gray-600">Address History & Activity</p>
-                </div>
-
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-purple-600">{history.summary.totalWOIDs}</div>
-                        <div className="text-sm text-gray-600">Work Orders</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-blue-600">{history.summary.totalTeams}</div>
-                        <div className="text-sm text-gray-600">Teams</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-green-600">{history.summary.totalReports}</div>
-                        <div className="text-sm text-gray-600">Reports</div>
-                    </div>
-                    <div className="bg-white rounded-lg shadow p-4">
-                        <div className="text-2xl font-bold text-indigo-600">{history.summary.totalFiles}</div>
-                        <div className="text-sm text-gray-600">Files</div>
-                    </div>
-                </div>
-
-                {/* Tabs */}
-                <div className="bg-white rounded-lg shadow mb-6">
-                    <div className="border-b border-gray-200">
-                        <nav className="flex -mb-px">
-                            {tabs.map((tab: any) => (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as any)}
-                                    className={`
-                    relative px-6 py-4 text-sm font-medium transition-colors
-                    ${activeTab === tab.id
-                                            ? "border-b-2 border-purple-500 text-purple-600"
-                                            : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                        }
-                  `}
-                                >
-                                    <span className="mr-2">{tab.icon}</span>
-                                    {tab.label}
-                                    {tab.count > 0 && (
-                                        <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                                            {tab.count}
-                                        </span>
-                                    )}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-
-                    <div className="p-6">
-                        {/* Overview Tab */}
-                        {activeTab === "overview" && (
+        <div className="min-h-screen bg-gray-50">
+            {/* Header */}
+            <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                            <Link
+                                href="/view"
+                                className="mt-1 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ArrowLeft className="h-5 w-5 text-gray-600" />
+                            </Link>
                             <div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline</h2>
-                                <div className="space-y-4">
-                                    {timeline.slice(0, 20).map((activity: any, index: number) => (
-                                        <div key={index} className="flex gap-4 border-l-2 border-purple-200 pl-4 pb-4">
-                                            <div className="flex-shrink-0 w-24 text-sm text-gray-500">
-                                                {formatDate(activity.date)}
+                <h1 className="text-2xl font-bold text-gray-900">{address}</h1>
+                <p className="text-gray-600 text-sm mt-1">
+                  {totalWoids} work orders across {historyData.summary.totalTeams} teams
+                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="text-right">
+                                <div className="text-sm text-gray-600">Overall Progress</div>
+                                <div className="text-lg font-bold text-gray-900">{completionPercentage}%</div>
+                            </div>
+                            <div className="w-24">
+                                <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div
+                                        className="bg-purple-600 h-full transition-all"
+                                        style={{ width: `${completionPercentage}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+            {/* Summary Stats */}
+          <div className="grid grid-cols-4 gap-4 mt-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-green-900">{completeWoids}</p>
+                  <p className="text-xs text-green-700">Complete</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5 text-blue-600" />
+                <div>
+                  <p className="text-2xl font-bold text-blue-900">{inProgressWoids}</p>
+                  <p className="text-xs text-blue-700">In Progress</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Circle className="w-5 h-5 text-orange-600" />
+                <div>
+                  <p className="text-2xl font-bold text-orange-900">{voidWoids}</p>
+                  <p className="text-xs text-orange-700">Void</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-purple-600" />
+                <div>
+                  <p className="text-2xl font-bold text-purple-900">{historyData.summary.totalTickets}</p>
+                  <p className="text-xs text-purple-700">Tickets</p>
+                </div>
+              </div>
+            </div>
+          </div>
+                </div>
+            </header>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Sidebar - Work Orders */}
+                    <aside className="lg:col-span-3">
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                            <div className="p-4 border-b border-gray-200">
+                                <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+                                    Work Orders ({totalWoids})
+                                </h2>
+                            </div>
+                            <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+                                {/* All Work Orders option */}
+                                <button
+                                    onClick={() => setSelectedWoid(null)}
+                                    className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${selectedWoid === null ? "bg-purple-50 border-l-4 border-purple-600" : ""
+                                        }`}
+                                >
+                                    <div className="font-medium text-gray-900">All Work Orders</div>
+                                    <div className="text-sm text-gray-600">View combined activity</div>
+                                </button>
+
+                                {/* Individual WOIDs */}
+                                {Array.from(woidTeamMap.keys()).map((woid) => {
+                                    const teams = woidTeamMap.get(woid) || [];
+                                    const reports = reportsByWoid.get(woid) || [];
+                                    const status = getWoidStatus(woid);
+                                    const isSelected = selectedWoid === woid;
+
+                                    return (
+                                        <button
+                                            key={woid}
+                                            onClick={() => setSelectedWoid(woid)}
+                                            className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50 border-l-4 border-purple-600" : ""
+                                                }`}
+                                        >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-sm font-bold text-gray-900">{woid}</span>
+                                                {status === "complete" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                                                {status === "in_progress" && <Clock className="w-4 h-4 text-blue-500" />}
+                                                {status === "void" && <Circle className="w-4 h-4 text-orange-500" />}
                                             </div>
-                                            <div className="flex-1">
-                                                {activity.type === "report" && (
-                                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-green-700 font-medium">📝 Report Filed</span>
-                                                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">
-                                                                {activity.workOrderId}
-                                                            </span>
-                                                        </div>
-                                                        {activity.report.notes && (
-                                                            <p className="text-sm text-gray-700 mt-2">{activity.report.notes}</p>
-                                                        )}
-                                                        {activity.report.files?.length > 0 && (
-                                                            <div className="mt-2 text-xs text-gray-600">
-                                                                📎 {activity.report.files.length} file(s) attached
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {activity.type === "ticket_update" && (
-                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-blue-700 font-medium">🎫 Ticket Update</span>
-                                                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                                                                #{activity.ticketId}
-                                                            </span>
-                                                        </div>
-                                                        <div className="text-sm text-gray-700 mt-2">
-                                                            <span className="font-medium">{activity.update.utilityCompany}</span>:{" "}
-                                                            {activity.update.status}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                            <div className="flex items-center gap-3 text-xs text-gray-500">
+                                                <span className="flex items-center gap-1">
+                                                    <Users className="w-3 h-3" />
+                                                    {teams.length}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <FileText className="w-3 h-3" />
+                                                    {reports.length}
+                                                </span>
                                             </div>
-                                        </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Main Content */}
+                    <main className="lg:col-span-9">
+                        {/* Tabs */}
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                            <div className="border-b border-gray-200">
+                                <div className="flex">
+                                    {[
+                                        { id: "activity", label: "Activity", icon: Clock },
+                                        { id: "teams", label: "Teams", icon: Users },
+                                        { id: "utilities", label: "Utilities", icon: Ticket },
+                                        { id: "files", label: "Files", icon: FileText, badge: historyData.summary.totalFiles },
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                                            className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                                                    ? "border-purple-600 text-purple-600"
+                                                    : "border-transparent text-gray-600 hover:text-gray-900"
+                                                }`}
+                                        >
+                                            <tab.icon className="w-4 h-4" />
+                                            {tab.label}
+                                            {tab.badge !== undefined && tab.badge > 0 && (
+                                                <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+                                                    {tab.badge}
+                                                </span>
+                                            )}
+                                        </button>
                                     ))}
                                 </div>
                             </div>
-                        )}
 
-                        {/* Teams Tab */}
-                        {activeTab === "teams" && (
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">Teams & Their Work</h2>
-                                <div className="space-y-4">
-                                    {Array.from(allTeams.values()).map((team: any) => {
-                                        const statusColors: Record<string, string> = {
-                                            complete: "bg-green-100 border-green-300 text-green-800",
-                                            incomplete: "bg-gray-100 border-gray-300 text-gray-600",
-                                            void: "bg-orange-100 border-orange-300 text-orange-800",
-                                        };
-                                        const colorClass = team.status
-                                            ? statusColors[team.status.toLowerCase()] || "bg-gray-100 border-gray-300"
-                                            : "bg-gray-100 border-gray-300";
-
-                                        return (
-                                            <div key={team.taskForceId} className={`rounded-lg border-2 p-4 ${colorClass}`}>
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold">{team.taskForceName}</h3>
-                                                        {team.status && (
-                                                            <span className="text-sm capitalize">{team.status}</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right text-sm text-gray-600">
-                                                        <div>{team.reportCount} reports</div>
-                                                        <div>{team.woids.length} work order(s)</div>
-                                                    </div>
-                                                </div>
-                                                {team.completionDate && (
-                                                    <div className="text-sm">
-                                                        ✅ Completed: {formatDate(team.completionDate)}
-                                                    </div>
-                                                )}
-                                                <div className="mt-2 text-xs text-gray-600">
-                                                    WOIDs: {team.woids.join(", ")}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Files Tab */}
-                        {activeTab === "files" && (
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                    All Files ({history.files.length})
-                                </h2>
-                                {history.files.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {history.files.map((file: any) => (
-                                            <a
-                                                key={file._id}
-                                                href={file.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors"
-                                            >
-                                                <div className="flex-shrink-0">
-                                                    <svg
-                                                        className="w-10 h-10 text-gray-400"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        viewBox="0 0 24 24"
-                                                    >
-                                                        <path
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            strokeWidth={2}
-                                                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-medium text-gray-900 truncate">
-                                                        {file.name || "Unnamed File"}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {formatDate(file._creationTime)}
-                                                    </div>
-                                                </div>
-                                                <svg
-                                                    className="w-5 h-5 text-gray-400 flex-shrink-0"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                                                    />
-                                                </svg>
-                                            </a>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 text-gray-500">
-                                        No files uploaded yet
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Tickets Tab */}
-                        {activeTab === "tickets" && (
-                            <div>
-                                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                                    Tickets & Updates ({history.tickets.length})
-                                </h2>
-                                {history.tickets.length > 0 ? (
-                                    <div className="space-y-6">
-                                        {history.tickets.map((ticket: any) => (
-                                            <div key={ticket.ticketId} className="border border-gray-200 rounded-lg p-4">
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <div>
-                                                        <h3 className="text-lg font-semibold">Ticket #{ticket.ticketId}</h3>
-                                                        {ticket.ticketType && (
-                                                            <span className="text-sm text-gray-600">{ticket.ticketType}</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-sm text-gray-500">
-                                                        {formatDate(ticket.creationDate)}
-                                                    </span>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    {ticket.updates.map((update: any) => (
-                                                        <div
-                                                            key={update._id}
-                                                            className="bg-blue-50 border-l-4 border-blue-500 p-3 rounded"
+                            <div className="p-6">
+                                {/* Activity Tab */}
+                                {activeTab === "activity" && (
+                                    <div>
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="text-lg font-semibold text-gray-900">Activity Timeline</h3>
+                                            <div className="flex items-center gap-2">
+                                                <Filter className="w-4 h-4 text-gray-500" />
+                                                <div className="flex gap-1">
+                                                    {(["all", "reports", "tickets"] as const).map((filter) => (
+                                                        <button
+                                                            key={filter}
+                                                            onClick={() => setTimelineFilter(filter)}
+                                                            className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-colors ${timelineFilter === filter
+                                                                    ? "bg-purple-600 text-white"
+                                                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                                }`}
                                                         >
-                                                            <div className="flex justify-between items-start mb-1">
-                                                                <span className="font-medium text-gray-900">
-                                                                    {update.utilityCompany}
-                                                                </span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {formatDate(update._creationTime)}
-                                                                </span>
-                                                            </div>
-                                                            <div className="text-sm text-gray-700">
-                                                                Status: <span className="font-medium">{update.status}</span>
-                                                            </div>
-                                                        </div>
+                                                            {filter}
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+
+                                        <div className="max-h-[500px] overflow-y-auto space-y-6">
+                                            {Object.keys(groupedTimeline).length > 0 ? (
+                                                (Object.entries(groupedTimeline) as Array<[string, typeof timeline]>).map(([dateKey, items]) => (
+                                                    <div key={dateKey}>
+                                                        <div className="flex items-center gap-2 mb-3">
+                                                            <div className="h-px flex-1 bg-gray-300" />
+                                                            <span className="text-xs font-medium text-gray-500 px-2">
+                                                                {formatDate(new Date(dateKey).getTime())}
+                                                            </span>
+                                                            <div className="h-px flex-1 bg-gray-300" />
+                                                        </div>
+                                                        <div className="space-y-3">
+                                                            {items.map((activity: typeof timeline[0], index: number) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className={`flex gap-3 p-4 rounded-lg border ${activity.type === "report"
+                                                                            ? "bg-green-50 border-green-200"
+                                                                            : "bg-blue-50 border-blue-200"
+                                                                        }`}
+                                                                >
+                                                                    <div
+                                                                        className={`flex items-center justify-center w-8 h-8 rounded-full ${activity.type === "report" ? "bg-green-500" : "bg-blue-500"
+                                                                            }`}
+                                                                    >
+                                                                        {activity.type === "report" ? (
+                                                                            <FileText className="w-4 h-4 text-white" />
+                                                                        ) : (
+                                                                            <Ticket className="w-4 h-4 text-white" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <span className="font-medium text-sm text-gray-900">
+                                                                                {activity.type === "report" ? "Report Filed" : "Utility Update"}
+                                                                            </span>
+                                                                            <span className="px-2 py-0.5 bg-white border border-gray-300 rounded text-xs font-mono">
+                                                                                {activity.type === "report"
+                                                                                    ? activity.workOrderId
+                                                                                    : `#${activity.ticketId}`}
+                                                                            </span>
+                                                                            <span className="text-xs text-gray-500 ml-auto">
+                                                                                {formatTime(activity.date)}
+                                                                            </span>
+                                                                        </div>
+                                    {activity.type === "report" && (activity.report.notes || activity.report.comment) && (
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {activity.report.notes || activity.report.comment}
+                                      </p>
+                                    )}
+                                                                        {activity.type === "ticket_update" && (
+                                                                            <p className="text-sm mt-1">
+                                                                                <span className="font-medium text-gray-900">
+                                                                                    {activity.update.utilityCompany}
+                                                                                </span>
+                                                                                <span className="text-gray-500"> - </span>
+                                                                                <span className="text-gray-700">{activity.update.status}</span>
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-12 text-gray-500">No activity found</div>
+                                            )}
+                                        </div>
                                     </div>
-                                ) : (
-                                    <div className="text-center py-12 text-gray-500">
-                                        No tickets found
+                                )}
+
+                                {/* Teams Tab */}
+                                {activeTab === "teams" && (
+                                    <div className="space-y-4">
+                                        {Array.from(woidTeamMap.entries())
+                                            .filter(([woid]) => !selectedWoid || woid === selectedWoid)
+                                            .map(([woid, teams]) => (
+                                                <div key={woid} className="border border-gray-200 rounded-lg p-4">
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-base font-mono font-semibold text-gray-900">{woid}</h3>
+                                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs">
+                                                                {teams.length} teams
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                        {teams.map((team, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-white"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-medium">
+                                                                        {team.teamName?.slice(0, 2).toUpperCase() || "TM"}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="font-medium text-gray-900">{team.teamName}</div>
+                                                                        {team.completionDate && (
+                                                                            <div className="text-xs text-gray-500">
+                                                                                Completed {formatDate(team.completionDate)}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <span
+                                                                    className={`px-3 py-1 rounded-full text-xs font-medium ${team.status === "complete"
+                                                                            ? "bg-green-100 text-green-800"
+                                                                            : team.status === "void"
+                                                                                ? "bg-orange-100 text-orange-800"
+                                                                                : "bg-gray-200 text-gray-800"
+                                                                        }`}
+                                                                >
+                                                                    {team.status || "Not Started"}
+                                                                </span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+
+                                {/* Utilities Tab */}
+                                {activeTab === "utilities" && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Utility Clearance Status</h3>
+                                        <p className="text-sm text-gray-600 mb-4">
+                                            {historyData.tickets.length} ticket(s) with utility updates
+                                        </p>
+                                        {historyData.tickets.length > 0 ? (
+                                            <div className="space-y-6">
+                                                {historyData.tickets.map((ticket: { _id: string; ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) => {
+                                                    const utilities = new Map<string, { status: string; updateDate: number }>();
+                                                    ticket.updates.forEach((update: { _creationTime: number; utilityCompany: string; status: string }) => {
+                                                        const existing = utilities.get(update.utilityCompany);
+                                                        if (!existing || update._creationTime > existing.updateDate) {
+                                                            utilities.set(update.utilityCompany, {
+                                                                status: update.status,
+                                                                updateDate: update._creationTime,
+                                                            });
+                                                        }
+                                                    });
+
+                                                    return (
+                                                        <div key={ticket._id} className="border border-gray-200 rounded-lg p-4">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="px-2 py-1 bg-gray-100 text-gray-900 rounded text-sm font-mono">
+                                                                        #{ticket.ticketId}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-xs text-gray-500">
+                                                                    {ticket.updates.length} updates
+                                                                </span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                                {Array.from(utilities.entries()).map(([company, data]) => (
+                                                                    <div key={company} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
+                                                                        <div className={`w-2 h-2 rounded-full ${getStatusColor(data.status)}`} />
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="text-sm font-medium text-gray-900 truncate">{company}</div>
+                                                                            <div className="text-xs text-gray-600 truncate">{data.status}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">No tickets found for this address</div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Files Tab */}
+                                {activeTab === "files" && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                            Files ({historyData.files.length})
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mb-4">All files associated with this address</p>
+                    {historyData.files.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string }) => (
+                          <a
+                            key={file._id}
+                            href={file.googleUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex-shrink-0 p-2 rounded-md bg-gray-100">
+                              <FileText className="h-5 w-5 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate group-hover:text-purple-600">
+                                {file.name || "Unnamed File"}
+                              </div>
+                              <div className="text-xs text-gray-500">{formatDate(file._creationTime)}</div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">No files uploaded yet</div>
+                                        )}
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    </main>
                 </div>
             </div>
         </div>
     );
 }
-
