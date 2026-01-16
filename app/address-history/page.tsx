@@ -24,10 +24,11 @@ export default function AddressHistoryPage() {
     const searchParams = useSearchParams();
     const address = searchParams.get("address");
     const projectId = searchParams.get("projectId") as Id<"projects"> | null;
-    const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
-    const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
-    const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  const [selectedReport, setSelectedReport] = useState<any | null>(null);
 
     const historyData = useQuery(
         api.addressHistory.getAddressHistory,
@@ -72,11 +73,11 @@ export default function AddressHistoryPage() {
         });
     };
 
-  const isImageFile = (fileName: string, fileType?: string) => {
-    if (fileType && fileType.includes("image")) return true;
-    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
-    return imageExtensions.some((ext) => fileName.toLowerCase().endsWith(ext));
-  };
+    const isImageFile = (fileName: string, fileType?: string) => {
+        if (fileType && fileType.includes("image")) return true;
+        const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
+        return imageExtensions.some((ext) => fileName.toLowerCase().endsWith(ext));
+    };
 
     // Build WOID-centric data structure
     const woidTeamMap = new Map<string, Array<{ teamName: string; status: string; completionDate?: number }>>();
@@ -393,11 +394,14 @@ export default function AddressHistoryPage() {
                                                             <div className="h-px flex-1 bg-gray-300" />
                                                         </div>
                                                         <div className="space-y-3">
-                                                            {items.map((activity: typeof timeline[0], index: number) => (
-                                                                <div
+                                                            {items.map((activity: typeof timeline[0], index: number) => {
+                                                                const Component = activity.type === "report" ? "button" : "div";
+                                                                return (
+                                                                <Component
                                                                     key={index}
-                                                                    className={`flex gap-3 p-4 rounded-lg border ${activity.type === "report"
-                                                                        ? "bg-green-50 border-green-200"
+                                                                    onClick={activity.type === "report" ? () => setSelectedReport(activity.report) : undefined}
+                                                                    className={`w-full text-left flex gap-3 p-4 rounded-lg border transition-all ${activity.type === "report"
+                                                                        ? "bg-green-50 border-green-200 hover:bg-green-100 cursor-pointer"
                                                                         : "bg-blue-50 border-blue-200"
                                                                         }`}
                                                                 >
@@ -440,8 +444,9 @@ export default function AddressHistoryPage() {
                                                                             </p>
                                                                         )}
                                                                     </div>
-                                                                </div>
-                                                            ))}
+                                                                </Component>
+                                                            );
+                                                            })}
                                                         </div>
                                                     </div>
                                                 ))
@@ -569,7 +574,7 @@ export default function AddressHistoryPage() {
                                             <div className="space-y-2">
                                                 {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string; fileType?: string }) => {
                                                     const isImage = isImageFile(file.name, file.fileType);
-                                                    
+
                                                     if (isImage) {
                                                         return (
                                                             <button
@@ -637,45 +642,174 @@ export default function AddressHistoryPage() {
                 </div>
             </div>
 
-            {/* Image Modal */}
-            {selectedImage && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-                    onClick={() => setSelectedImage(null)}
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-full">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-12 right-0 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">{selectedImage.name}</h3>
+                <a
+                  href={selectedImage.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="relative max-w-7xl max-h-full">
-                        <button
-                            onClick={() => setSelectedImage(null)}
-                            className="absolute -top-12 right-0 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-                        >
-                            <X className="h-6 w-6" />
-                        </button>
-                        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-                            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                                <h3 className="text-lg font-semibold text-gray-900">{selectedImage.name}</h3>
-                                <a
-                                    href={selectedImage.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <Download className="h-4 w-4" />
-                                    Open Original
-                                </a>
-                            </div>
-                            <div className="p-4 bg-gray-100">
-                                <img
-                                    src={selectedImage.url}
-                                    alt={selectedImage.name}
-                                    className="max-w-full max-h-[70vh] mx-auto object-contain"
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                  <Download className="h-4 w-4" />
+                  Open Original
+                </a>
+              </div>
+              <div className="p-4 bg-gray-100">
+                <img
+                  src={selectedImage.url}
+                  alt={selectedImage.name}
+                  className="max-w-full max-h-[70vh] mx-auto object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Details Modal */}
+      {selectedReport && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setSelectedReport(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Daily Report</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {formatDate(selectedReport._creationTime)} at {formatTime(selectedReport._creationTime)}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedReport(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
+              {/* WOID */}
+              <div className="mb-4">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Work Order</label>
+                <p className="text-sm font-mono font-medium text-gray-900 mt-1">{selectedReport.workOrderId}</p>
+              </div>
+
+              {/* Status */}
+              {selectedReport.completionStatus && (
+                <div className="mb-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</label>
+                  <div className="mt-1">
+                    <span
+                      className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                        selectedReport.completionStatus === "complete"
+                          ? "bg-green-100 text-green-800"
+                          : selectedReport.completionStatus === "void"
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-gray-200 text-gray-800"
+                      }`}
+                    >
+                      {selectedReport.completionStatus}
+                    </span>
+                  </div>
                 </div>
-            )}
+              )}
+
+              {/* Notes/Comments */}
+              {(selectedReport.notes || selectedReport.comment) && (
+                <div className="mb-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</label>
+                  <p className="text-sm text-gray-900 mt-1 whitespace-pre-wrap">
+                    {selectedReport.notes || selectedReport.comment}
+                  </p>
+                </div>
+              )}
+
+              {/* Details */}
+              {selectedReport.details && Object.keys(selectedReport.details).length > 0 && (
+                <div className="mb-4">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                    Report Details
+                  </label>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    {Object.entries(selectedReport.details).map(([key, value]: [string, any]) => (
+                      <div key={key} className="flex justify-between">
+                        <span className="text-xs font-medium text-gray-600">{key}:</span>
+                        <span className="text-xs text-gray-900">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Attached Files */}
+              {selectedReport.files && selectedReport.files.length > 0 && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 block">
+                    Attached Files ({selectedReport.files.length})
+                  </label>
+                  <div className="space-y-2">
+                    {selectedReport.files.map((file: any) => {
+                      const isImage = isImageFile(file.name, file.fileType);
+                      return (
+                        <div key={file._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            {isImage ? (
+                              <ImageIcon className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-gray-600" />
+                            )}
+                            <span className="text-sm text-gray-900">{file.name}</span>
+                          </div>
+                          {isImage ? (
+                            <button
+                              onClick={() => {
+                                setSelectedReport(null);
+                                setSelectedImage({ url: file.googleUrl || "", name: file.name });
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              View
+                            </button>
+                          ) : (
+                            <a
+                              href={file.googleUrl || "#"}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                            >
+                              Download
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
         </div>
     );
 }
