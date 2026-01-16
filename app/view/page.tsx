@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { useUser } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import Link from "next/link";
 
 export default function ViewPage() {
   const { user: clerkUser } = useUser();
@@ -324,7 +325,12 @@ export default function ViewPage() {
                             className={addressRowClass}
                           >
                             <td className="px-6 py-4 text-sm font-bold text-gray-900 border-r border-gray-300">
-                              {addressData.address}
+                              <Link
+                                href={`/address-history?address=${encodeURIComponent(addressData.address)}&projectId=${selectedProjectId}`}
+                                className="text-purple-600 hover:text-purple-800 hover:underline cursor-pointer"
+                              >
+                                {addressData.address}
+                              </Link>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500 border-r border-gray-300 italic">
                               {addressData.woids.length} WOID{addressData.woids.length !== 1 ? "s" : ""}
