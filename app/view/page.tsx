@@ -297,24 +297,24 @@ export default function ViewPage() {
                       const hasVoidTeam = addressData.woids.some(woid =>
                         woid.teams.some(team => team.status?.toLowerCase() === "void")
                       );
-                      
+
                       // Check if the completing team is complete
                       const completingTeamId = selectedProject?.completingTeamId;
                       const isAddressComplete = completingTeamId
                         ? addressData.woids.some(woid =>
-                            woid.teams.some(
-                              team =>
-                                team.taskForceId === completingTeamId &&
-                                team.status?.toLowerCase() === "complete"
-                            )
+                          woid.teams.some(
+                            team =>
+                              team.taskForceId === completingTeamId &&
+                              team.status?.toLowerCase() === "complete"
                           )
+                        )
                         : false;
-                      
+
                       const addressRowClass = hasVoidTeam
                         ? "bg-orange-100 border-b-2 border-orange-300"
                         : isAddressComplete
-                        ? "bg-green-50 border-b-2 border-green-300"
-                        : "bg-purple-50 border-b-2 border-purple-200";
+                          ? "bg-green-50 border-b-2 border-green-300"
+                          : "bg-purple-50 border-b-2 border-purple-200";
 
                       return (
                         <>
