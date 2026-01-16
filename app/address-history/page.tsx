@@ -721,10 +721,10 @@ export default function AddressHistoryPage() {
                                     <div className="mt-1">
                                         <span
                                             className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${selectedReport.completionStatus === "complete"
-                                                    ? "bg-green-100 text-green-800"
-                                                    : selectedReport.completionStatus === "void"
-                                                        ? "bg-orange-100 text-orange-800"
-                                                        : "bg-gray-200 text-gray-800"
+                                                ? "bg-green-100 text-green-800"
+                                                : selectedReport.completionStatus === "void"
+                                                    ? "bg-orange-100 text-orange-800"
+                                                    : "bg-gray-200 text-gray-800"
                                                 }`}
                                         >
                                             {selectedReport.completionStatus}
