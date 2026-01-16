@@ -6,14 +6,17 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import {
-    ArrowLeft,
-    FileText,
-    Users,
-    Ticket,
-    Clock,
-    CheckCircle2,
-    Circle,
-    Filter,
+  ArrowLeft,
+  FileText,
+  Users,
+  Ticket,
+  Clock,
+  CheckCircle2,
+  Circle,
+  Filter,
+  Image as ImageIcon,
+  X,
+  Download,
 } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -21,9 +24,10 @@ export default function AddressHistoryPage() {
     const searchParams = useSearchParams();
     const address = searchParams.get("address");
     const projectId = searchParams.get("projectId") as Id<"projects"> | null;
-    const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
-    const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
+  const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
     const historyData = useQuery(
         api.addressHistory.getAddressHistory,
@@ -53,20 +57,33 @@ export default function AddressHistoryPage() {
         );
     }
 
-    const formatDate = (timestamp: number) => {
-        return new Date(timestamp).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
-    };
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
-    const formatTime = (timestamp: number) => {
-        return new Date(timestamp).toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-        });
-    };
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const isImageFile = (fileName: string, fileType?: string) => {
+    if (fileType && fileType.includes("image")) return true;
+    const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
+    return imageExtensions.some((ext) => fileName.toLowerCase().endsWith(ext));
+  };
+
+  const handleFileClick = (e: React.MouseEvent, file: { name: string; googleUrl?: string; fileType?: string }) => {
+    if (file.googleUrl && isImageFile(file.name, file.fileType)) {
+      e.preventDefault();
+      setSelectedImage({ url: file.googleUrl, name: file.name });
+    }
+  };
 
     // Build WOID-centric data structure
     const woidTeamMap = new Map<string, Array<{ teamName: string; status: string; completionDate?: number }>>();
@@ -78,32 +95,32 @@ export default function AddressHistoryPage() {
         }
     }
 
-  // Add team assignments (taskForceAssignments is already grouped by WOID)
-  for (const taskForceGroup of historyData.taskForceAssignments) {
-    const teams = taskForceGroup.teams.map((team: any) => ({
-      teamName: team.taskForceName,
-      status: team.status,
-      completionDate: team.completionDate,
-    }));
-    woidTeamMap.set(taskForceGroup.workOrderId, teams);
-  }
-
-  // Group reports by WOID (dailyReports is already grouped by WOID)
-  const reportsByWoid = new Map<string, Array<any>>();
-  for (const dr of historyData.dailyReports) {
-    reportsByWoid.set(dr.workOrderId, dr.reports);
-  }
-
-  // Group files by WOID
-  const filesByWoid = new Map<string, typeof historyData.files>();
-  for (const file of historyData.files) {
-    const woid = file.workOrderId;
-    if (!woid) continue;
-    if (!filesByWoid.has(woid)) {
-      filesByWoid.set(woid, []);
+    // Add team assignments (taskForceAssignments is already grouped by WOID)
+    for (const taskForceGroup of historyData.taskForceAssignments) {
+        const teams = taskForceGroup.teams.map((team: any) => ({
+            teamName: team.taskForceName,
+            status: team.status,
+            completionDate: team.completionDate,
+        }));
+        woidTeamMap.set(taskForceGroup.workOrderId, teams);
     }
-    filesByWoid.get(woid)!.push(file);
-  }
+
+    // Group reports by WOID (dailyReports is already grouped by WOID)
+    const reportsByWoid = new Map<string, Array<any>>();
+    for (const dr of historyData.dailyReports) {
+        reportsByWoid.set(dr.workOrderId, dr.reports);
+    }
+
+    // Group files by WOID
+    const filesByWoid = new Map<string, typeof historyData.files>();
+    for (const file of historyData.files) {
+        const woid = file.workOrderId;
+        if (!woid) continue;
+        if (!filesByWoid.has(woid)) {
+            filesByWoid.set(woid, []);
+        }
+        filesByWoid.get(woid)!.push(file);
+    }
 
     // Calculate completion stats
     let completeWoids = 0;
@@ -122,25 +139,25 @@ export default function AddressHistoryPage() {
     const totalWoids = woidTeamMap.size;
     const completionPercentage = totalWoids > 0 ? Math.round((completeWoids / totalWoids) * 100) : 0;
 
-  // Build timeline
-  const timeline = [
-    ...historyData.dailyReports.flatMap((dr: { workOrderId: string; reports: Array<any> }) =>
-      dr.reports.map((report: any) => ({
-        type: "report" as const,
-        date: report._creationTime,
-        workOrderId: dr.workOrderId,
-        report,
-      }))
-    ),
-    ...historyData.tickets.flatMap((t: { ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) =>
-      t.updates.map((u: { _creationTime: number; utilityCompany: string; status: string }) => ({
-        type: "ticket_update" as const,
-        date: u._creationTime,
-        ticketId: t.ticketId,
-        update: u,
-      })),
-    ),
-  ]
+    // Build timeline
+    const timeline = [
+        ...historyData.dailyReports.flatMap((dr: { workOrderId: string; reports: Array<any> }) =>
+            dr.reports.map((report: any) => ({
+                type: "report" as const,
+                date: report._creationTime,
+                workOrderId: dr.workOrderId,
+                report,
+            }))
+        ),
+        ...historyData.tickets.flatMap((t: { ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) =>
+            t.updates.map((u: { _creationTime: number; utilityCompany: string; status: string }) => ({
+                type: "ticket_update" as const,
+                date: u._creationTime,
+                ticketId: t.ticketId,
+                update: u,
+            })),
+        ),
+    ]
         .filter((item) => {
             if (timelineFilter === "all") return true;
             if (timelineFilter === "reports") return item.type === "report";
@@ -192,10 +209,10 @@ export default function AddressHistoryPage() {
                                 <ArrowLeft className="h-5 w-5 text-gray-600" />
                             </Link>
                             <div>
-                <h1 className="text-2xl font-bold text-gray-900">{address}</h1>
-                <p className="text-gray-600 text-sm mt-1">
-                  {totalWoids} work orders across {historyData.summary.totalTeams} teams
-                </p>
+                                <h1 className="text-2xl font-bold text-gray-900">{address}</h1>
+                                <p className="text-gray-600 text-sm mt-1">
+                                    {totalWoids} work orders across {historyData.summary.totalTeams} teams
+                                </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -214,45 +231,45 @@ export default function AddressHistoryPage() {
                         </div>
                     </div>
 
-            {/* Summary Stats */}
-          <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
-                <div>
-                  <p className="text-2xl font-bold text-green-900">{completeWoids}</p>
-                  <p className="text-xs text-green-700">Complete</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <div>
-                  <p className="text-2xl font-bold text-blue-900">{inProgressWoids}</p>
-                  <p className="text-xs text-blue-700">In Progress</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <Circle className="w-5 h-5 text-orange-600" />
-                <div>
-                  <p className="text-2xl font-bold text-orange-900">{voidWoids}</p>
-                  <p className="text-xs text-orange-700">Void</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-purple-600" />
-                <div>
-                  <p className="text-2xl font-bold text-purple-900">{historyData.summary.totalTickets}</p>
-                  <p className="text-xs text-purple-700">Tickets</p>
-                </div>
-              </div>
-            </div>
-          </div>
+                    {/* Summary Stats */}
+                    <div className="grid grid-cols-4 gap-4 mt-6">
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                <div>
+                                    <p className="text-2xl font-bold text-green-900">{completeWoids}</p>
+                                    <p className="text-xs text-green-700">Complete</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-blue-600" />
+                                <div>
+                                    <p className="text-2xl font-bold text-blue-900">{inProgressWoids}</p>
+                                    <p className="text-xs text-blue-700">In Progress</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2">
+                                <Circle className="w-5 h-5 text-orange-600" />
+                                <div>
+                                    <p className="text-2xl font-bold text-orange-900">{voidWoids}</p>
+                                    <p className="text-xs text-orange-700">Void</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div className="flex items-center gap-2">
+                                <Ticket className="w-5 h-5 text-purple-600" />
+                                <div>
+                                    <p className="text-2xl font-bold text-purple-900">{historyData.summary.totalTickets}</p>
+                                    <p className="text-xs text-purple-700">Tickets</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -291,8 +308,8 @@ export default function AddressHistoryPage() {
                                             className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${isSelected ? "bg-purple-50 border-l-4 border-purple-600" : ""
                                                 }`}
                                         >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono text-sm font-bold text-gray-900">{woid}</span>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="font-mono text-sm font-bold text-gray-900">{woid}</span>
                                                 {status === "complete" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
                                                 {status === "in_progress" && <Clock className="w-4 h-4 text-blue-500" />}
                                                 {status === "void" && <Circle className="w-4 h-4 text-orange-500" />}
@@ -330,8 +347,8 @@ export default function AddressHistoryPage() {
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
                                             className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
-                                                    ? "border-purple-600 text-purple-600"
-                                                    : "border-transparent text-gray-600 hover:text-gray-900"
+                                                ? "border-purple-600 text-purple-600"
+                                                : "border-transparent text-gray-600 hover:text-gray-900"
                                                 }`}
                                         >
                                             <tab.icon className="w-4 h-4" />
@@ -360,8 +377,8 @@ export default function AddressHistoryPage() {
                                                             key={filter}
                                                             onClick={() => setTimelineFilter(filter)}
                                                             className={`px-3 py-1 text-xs font-medium rounded-md capitalize transition-colors ${timelineFilter === filter
-                                                                    ? "bg-purple-600 text-white"
-                                                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                                ? "bg-purple-600 text-white"
+                                                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                                                 }`}
                                                         >
                                                             {filter}
@@ -387,8 +404,8 @@ export default function AddressHistoryPage() {
                                                                 <div
                                                                     key={index}
                                                                     className={`flex gap-3 p-4 rounded-lg border ${activity.type === "report"
-                                                                            ? "bg-green-50 border-green-200"
-                                                                            : "bg-blue-50 border-blue-200"
+                                                                        ? "bg-green-50 border-green-200"
+                                                                        : "bg-blue-50 border-blue-200"
                                                                         }`}
                                                                 >
                                                                     <div
@@ -415,11 +432,11 @@ export default function AddressHistoryPage() {
                                                                                 {formatTime(activity.date)}
                                                                             </span>
                                                                         </div>
-                                    {activity.type === "report" && (activity.report.notes || activity.report.comment) && (
-                                      <p className="text-sm text-gray-600 mt-1">
-                                        {activity.report.notes || activity.report.comment}
-                                      </p>
-                                    )}
+                                                                        {activity.type === "report" && (activity.report.notes || activity.report.comment) && (
+                                                                            <p className="text-sm text-gray-600 mt-1">
+                                                                                {activity.report.notes || activity.report.comment}
+                                                                            </p>
+                                                                        )}
                                                                         {activity.type === "ticket_update" && (
                                                                             <p className="text-sm mt-1">
                                                                                 <span className="font-medium text-gray-900">
@@ -478,10 +495,10 @@ export default function AddressHistoryPage() {
                                                                 </div>
                                                                 <span
                                                                     className={`px-3 py-1 rounded-full text-xs font-medium ${team.status === "complete"
-                                                                            ? "bg-green-100 text-green-800"
-                                                                            : team.status === "void"
-                                                                                ? "bg-orange-100 text-orange-800"
-                                                                                : "bg-gray-200 text-gray-800"
+                                                                        ? "bg-green-100 text-green-800"
+                                                                        : team.status === "void"
+                                                                            ? "bg-orange-100 text-orange-800"
+                                                                            : "bg-gray-200 text-gray-800"
                                                                         }`}
                                                                 >
                                                                     {team.status || "Not Started"}
@@ -548,45 +565,105 @@ export default function AddressHistoryPage() {
                                     </div>
                                 )}
 
-                                {/* Files Tab */}
-                                {activeTab === "files" && (
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                            Files ({historyData.files.length})
-                                        </h3>
-                                        <p className="text-sm text-gray-600 mb-4">All files associated with this address</p>
+                {/* Files Tab */}
+                {activeTab === "files" && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Files ({historyData.files.length})
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">All files associated with this address</p>
                     {historyData.files.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string }) => (
-                          <a
-                            key={file._id}
-                            href={file.googleUrl || "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="flex-shrink-0 p-2 rounded-md bg-gray-100">
-                              <FileText className="h-5 w-5 text-gray-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate group-hover:text-purple-600">
-                                {file.name || "Unnamed File"}
+                      <div className="space-y-2">
+                        {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string; fileType?: string }) => {
+                          const isImage = isImageFile(file.name, file.fileType);
+                          return (
+                            <a
+                              key={file._id}
+                              href={file.googleUrl || "#"}
+                              target={isImage ? undefined : "_blank"}
+                              rel={isImage ? undefined : "noopener noreferrer"}
+                              onClick={(e) => handleFileClick(e, file)}
+                              className="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center gap-3 flex-1 min-w-0">
+                                <div className={`flex-shrink-0 p-2 rounded-md ${isImage ? "bg-blue-100" : "bg-gray-100"}`}>
+                                  {isImage ? (
+                                    <ImageIcon className={`h-5 w-5 ${isImage ? "text-blue-600" : "text-gray-600"}`} />
+                                  ) : (
+                                    <FileText className="h-5 w-5 text-gray-600" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-gray-900 group-hover:text-purple-600">
+                                    {file.name || "Unnamed File"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 flex items-center gap-2">
+                                    <span>{formatDate(file._creationTime)}</span>
+                                    {isImage && <span className="text-blue-600">• Image</span>}
+                                  </div>
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">{formatDate(file._creationTime)}</div>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-gray-500">No files uploaded yet</div>
-                                        )}
-                                    </div>
+                              <div className="flex-shrink-0 ml-2">
+                                {isImage ? (
+                                  <div className="text-xs text-blue-600 font-medium">View</div>
+                                ) : (
+                                  <Download className="h-4 w-4 text-gray-400 group-hover:text-purple-600" />
                                 )}
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-gray-500">No files uploaded yet</div>
+                    )}
+                  </div>
+                )}
                             </div>
                         </div>
-                    </main>
-                </div>
-            </div>
+          </main>
         </div>
-    );
+      </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-full">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-12 right-0 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">{selectedImage.name}</h3>
+                <a
+                  href={selectedImage.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Download className="h-4 w-4" />
+                  Open Original
+                </a>
+              </div>
+              <div className="p-4 bg-gray-100">
+                <img
+                  src={selectedImage.url}
+                  alt={selectedImage.name}
+                  className="max-w-full max-h-[70vh] mx-auto object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
