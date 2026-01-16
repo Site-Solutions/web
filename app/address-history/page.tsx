@@ -6,17 +6,17 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import {
-  ArrowLeft,
-  FileText,
-  Users,
-  Ticket,
-  Clock,
-  CheckCircle2,
-  Circle,
-  Filter,
-  Image as ImageIcon,
-  X,
-  Download,
+    ArrowLeft,
+    FileText,
+    Users,
+    Ticket,
+    Clock,
+    CheckCircle2,
+    Circle,
+    Filter,
+    Image as ImageIcon,
+    X,
+    Download,
 } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
 
@@ -24,10 +24,10 @@ export default function AddressHistoryPage() {
     const searchParams = useSearchParams();
     const address = searchParams.get("address");
     const projectId = searchParams.get("projectId") as Id<"projects"> | null;
-  const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
-  const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
-  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+    const [selectedWoid, setSelectedWoid] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<"activity" | "teams" | "utilities" | "files">("activity");
+    const [timelineFilter, setTimelineFilter] = useState<"all" | "reports" | "tickets">("all");
+    const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
     const historyData = useQuery(
         api.addressHistory.getAddressHistory,
@@ -57,32 +57,25 @@ export default function AddressHistoryPage() {
         );
     }
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
 
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+    const formatTime = (timestamp: number) => {
+        return new Date(timestamp).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
 
   const isImageFile = (fileName: string, fileType?: string) => {
     if (fileType && fileType.includes("image")) return true;
     const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"];
     return imageExtensions.some((ext) => fileName.toLowerCase().endsWith(ext));
-  };
-
-  const handleFileClick = (e: React.MouseEvent, file: { name: string; googleUrl?: string; fileType?: string }) => {
-    if (file.googleUrl && isImageFile(file.name, file.fileType)) {
-      e.preventDefault();
-      setSelectedImage({ url: file.googleUrl, name: file.name });
-    }
   };
 
     // Build WOID-centric data structure
@@ -565,105 +558,124 @@ export default function AddressHistoryPage() {
                                     </div>
                                 )}
 
-                {/* Files Tab */}
-                {activeTab === "files" && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Files ({historyData.files.length})
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">All files associated with this address</p>
-                    {historyData.files.length > 0 ? (
-                      <div className="space-y-2">
-                        {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string; fileType?: string }) => {
-                          const isImage = isImageFile(file.name, file.fileType);
-                          return (
-                            <a
-                              key={file._id}
-                              href={file.googleUrl || "#"}
-                              target={isImage ? undefined : "_blank"}
-                              rel={isImage ? undefined : "noopener noreferrer"}
-                              onClick={(e) => handleFileClick(e, file)}
-                              className="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className={`flex-shrink-0 p-2 rounded-md ${isImage ? "bg-blue-100" : "bg-gray-100"}`}>
-                                  {isImage ? (
-                                    <ImageIcon className={`h-5 w-5 ${isImage ? "text-blue-600" : "text-gray-600"}`} />
-                                  ) : (
-                                    <FileText className="h-5 w-5 text-gray-600" />
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 group-hover:text-purple-600">
-                                    {file.name || "Unnamed File"}
-                                  </div>
-                                  <div className="text-xs text-gray-500 flex items-center gap-2">
-                                    <span>{formatDate(file._creationTime)}</span>
-                                    {isImage && <span className="text-blue-600">• Image</span>}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex-shrink-0 ml-2">
-                                {isImage ? (
-                                  <div className="text-xs text-blue-600 font-medium">View</div>
-                                ) : (
-                                  <Download className="h-4 w-4 text-gray-400 group-hover:text-purple-600" />
+                                {/* Files Tab */}
+                                {activeTab === "files" && (
+                                    <div>
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                            Files ({historyData.files.length})
+                                        </h3>
+                                        <p className="text-sm text-gray-600 mb-4">All files associated with this address</p>
+                                        {historyData.files.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {historyData.files.map((file: { _id: string; _creationTime: number; name: string; googleUrl?: string; fileType?: string }) => {
+                                                    const isImage = isImageFile(file.name, file.fileType);
+                                                    
+                                                    if (isImage) {
+                                                        return (
+                                                            <button
+                                                                key={file._id}
+                                                                onClick={() => setSelectedImage({ url: file.googleUrl || "", name: file.name })}
+                                                                className="w-full group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                                                            >
+                                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                    <div className="flex-shrink-0 p-2 rounded-md bg-blue-100">
+                                                                        <ImageIcon className="h-5 w-5 text-blue-600" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-sm font-medium text-gray-900 group-hover:text-purple-600">
+                                                                            {file.name || "Unnamed File"}
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                                                            <span>{formatDate(file._creationTime)}</span>
+                                                                            <span className="text-blue-600">• Image</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex-shrink-0 ml-2">
+                                                                    <div className="text-xs text-blue-600 font-medium">View</div>
+                                                                </div>
+                                                            </button>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <a
+                                                                key={file._id}
+                                                                href={file.googleUrl || "#"}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="group flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                                                            >
+                                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                    <div className="flex-shrink-0 p-2 rounded-md bg-gray-100">
+                                                                        <FileText className="h-5 w-5 text-gray-600" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-sm font-medium text-gray-900 group-hover:text-purple-600">
+                                                                            {file.name || "Unnamed File"}
+                                                                        </div>
+                                                                        <div className="text-xs text-gray-500 flex items-center gap-2">
+                                                                            <span>{formatDate(file._creationTime)}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex-shrink-0 ml-2">
+                                                                    <Download className="h-4 w-4 text-gray-400 group-hover:text-purple-600" />
+                                                                </div>
+                                                            </a>
+                                                        );
+                                                    }
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12 text-gray-500">No files uploaded yet</div>
+                                        )}
+                                    </div>
                                 )}
-                              </div>
-                            </a>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-gray-500">No files uploaded yet</div>
-                    )}
-                  </div>
-                )}
                             </div>
                         </div>
-          </main>
-        </div>
-      </div>
-
-      {/* Image Modal */}
-      {selectedImage && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div className="relative max-w-7xl max-h-full">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">{selectedImage.name}</h3>
-                <a
-                  href={selectedImage.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Download className="h-4 w-4" />
-                  Open Original
-                </a>
-              </div>
-              <div className="p-4 bg-gray-100">
-                <img
-                  src={selectedImage.url}
-                  alt={selectedImage.name}
-                  className="max-w-full max-h-[70vh] mx-auto object-contain"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
+                    </main>
+                </div>
             </div>
-          </div>
+
+            {/* Image Modal */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <div className="relative max-w-7xl max-h-full">
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute -top-12 right-0 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900">{selectedImage.name}</h3>
+                                <a
+                                    href={selectedImage.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Open Original
+                                </a>
+                            </div>
+                            <div className="p-4 bg-gray-100">
+                                <img
+                                    src={selectedImage.url}
+                                    alt={selectedImage.name}
+                                    className="max-w-full max-h-[70vh] mx-auto object-contain"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
