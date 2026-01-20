@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useUser, useClerk, SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { colors } from "@/lib/colors";
 
 export default function Header() {
   const { user } = useUser();
@@ -19,7 +20,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#8B5CF6] text-white shadow-md">
+    <header className="text-white shadow-md" style={{ backgroundColor: colors.primary }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: Logo/Hamburger */}
@@ -27,7 +28,12 @@ export default function Header() {
             {/* Hamburger menu for mobile */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-md text-white hover:bg-[#7C3AED] focus:outline-none"
+              className="md:hidden p-2 rounded-md text-white focus:outline-none"
+              style={{ 
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primaryDark}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               aria-label="Toggle menu"
             >
               <svg
@@ -176,7 +182,8 @@ export default function Header() {
               <div className="flex items-center space-x-3">
                 <Link
                   href="/sign-up"
-                  className="px-4 py-2 rounded-md text-sm font-medium bg-white text-[#8B5CF6] hover:bg-white/90 transition-colors"
+                  className="px-4 py-2 rounded-md text-sm font-medium bg-white hover:bg-white/90 transition-colors"
+                  style={{ color: colors.primary }}
                 >
                   Sign Up
                 </Link>
