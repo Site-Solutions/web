@@ -61,7 +61,14 @@ export default function Header() {
             </button>
 
             {/* Logo/Title */}
-            <Link href="/" className="ml-2 md:ml-0">
+            <Link href="/" className="ml-2 md:ml-0 flex items-center space-x-3">
+              <Image
+                src="/images/Icon-Light.png"
+                alt="BuildSimpli Logo"
+                width={32}
+                height={32}
+                className="h-8 w-8"
+              />
               <h1 className="text-xl font-bold">BuildSimpli</h1>
             </Link>
           </div>

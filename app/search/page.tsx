@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
+import Image from "next/image";
 
 export default function SearchPage() {
   const { user: clerkUser } = useUser();
@@ -161,8 +162,16 @@ export default function SearchPage() {
                   <p className="mt-2 text-gray-600">Loading...</p>
                 </div>
               ) : !searchResults || searchResults.length === 0 ? (
-                <div className="text-center py-8 text-gray-600">
-                  <p>No results found for &quot;{searchQuery}&quot;</p>
+                <div className="text-center py-12">
+                  <Image
+                    src="/images/undraw_empty.svg"
+                    alt="No results"
+                    width={200}
+                    height={200}
+                    className="mx-auto mb-6 opacity-50"
+                  />
+                  <p className="text-xl font-medium text-gray-700 mb-2">No results found</p>
+                  <p className="text-gray-500">No results found for &quot;{searchQuery}&quot;</p>
                 </div>
               ) : (
                 <div>

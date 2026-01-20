@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BuildSimpli",
   description: "BuildSimpli Web Portal",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
