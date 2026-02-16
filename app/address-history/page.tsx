@@ -143,11 +143,12 @@ export default function AddressHistoryPage() {
                 report,
             }))
         ),
-        ...historyData.tickets.flatMap((t: { ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) =>
+        ...historyData.tickets.flatMap((t: { ticketId: string; startDate?: number; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) =>
             t.updates.map((u: { _creationTime: number; utilityCompany: string; status: string }) => ({
                 type: "ticket_update" as const,
                 date: u._creationTime,
                 ticketId: t.ticketId,
+                startDate: t.startDate,
                 update: u,
             })),
         ),
@@ -425,6 +426,11 @@ export default function AddressHistoryPage() {
                                                                                         ? activity.workOrderId
                                                                                         : `#${activity.ticketId}`}
                                                                                 </span>
+                                                                                {activity.type === "ticket_update" && activity.startDate && (
+                                                                                    <span className="text-xs text-gray-600">
+                                                                                        Start: {formatDate(activity.startDate)}
+                                                                                    </span>
+                                                                                )}
                                                                                 <span className="text-xs text-gray-500 ml-auto">
                                                                                     {formatTime(activity.date)}
                                                                                 </span>
@@ -518,7 +524,7 @@ export default function AddressHistoryPage() {
                                         </p>
                                         {historyData.tickets.length > 0 ? (
                                             <div className="space-y-6">
-                                                {historyData.tickets.map((ticket: { _id: string; ticketId: string; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) => {
+                                                {historyData.tickets.map((ticket: { _id: string; ticketId: string; startDate?: number; updates: Array<{ _creationTime: number; utilityCompany: string; status: string }> }) => {
                                                     const utilities = new Map<string, { status: string; updateDate: number }>();
                                                     ticket.updates.forEach((update: { _creationTime: number; utilityCompany: string; status: string }) => {
                                                         const existing = utilities.get(update.utilityCompany);
@@ -537,6 +543,11 @@ export default function AddressHistoryPage() {
                                                                     <span className="px-2 py-1 bg-gray-100 text-gray-900 rounded text-sm font-mono">
                                                                         #{ticket.ticketId}
                                                                     </span>
+                                                                    {ticket.startDate && (
+                                                                        <span className="text-xs text-gray-600">
+                                                                            Start: {formatDate(ticket.startDate)}
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <span className="text-xs text-gray-500">
                                                                     {ticket.updates.length} updates
