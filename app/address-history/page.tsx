@@ -52,12 +52,18 @@ export default function AddressHistoryPage() {
   // --- Helpers ---
   const formatDate = useCallback((timestamp: number) => {
     const date = new Date(timestamp);
-    // Use UTC to avoid timezone shifting dates
-    return date.toLocaleDateString("en-US", {
+    // Use UTC methods to avoid timezone shifting
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    
+    // Create a new date using UTC components (this will be treated as local time but has correct day)
+    const utcDate = new Date(year, month, day);
+    
+    return utcDate.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-      timeZone: "UTC", // Force UTC to prevent date shifting
     });
   }, []);
 
