@@ -345,7 +345,23 @@ export default function ViewPage() {
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                          {result.latestStatus && getStatusBadge(result.latestStatus)}
+                          {result.teamStatuses && result.teamStatuses.length > 0 ? (
+                            <div className="flex flex-col gap-1 items-end">
+                              {result.teamStatuses.map((team: any) => (
+                                <div key={team.teamId} className="flex items-center gap-1.5">
+                                  {team.isPriority && (
+                                    <span className="text-xs text-yellow-500">⭐</span>
+                                  )}
+                                  <span className="text-xs text-gray-500 truncate max-w-[80px]">
+                                    {team.teamName}
+                                  </span>
+                                  {getStatusBadge(team.status)}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            result.latestStatus && getStatusBadge(result.latestStatus)
+                          )}
                           {result.latestReportDate && (
                             <span className="text-xs text-gray-400">
                               {formatDate(result.latestReportDate)}
@@ -405,15 +421,26 @@ export default function ViewPage() {
                                 </span>
                                 {/* Show inline enriched data if available from search */}
                                 {enriched && (
-                                  <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
-                                    <span>{enriched.woidCount} WOID{enriched.woidCount !== 1 ? "s" : ""}</span>
-                                    <span className="text-gray-300">|</span>
-                                    <span>{enriched.teamCount} team{enriched.teamCount !== 1 ? "s" : ""}</span>
-                                    {enriched.latestStatus && (
-                                      <>
-                                        <span className="text-gray-300">|</span>
-                                        {getStatusBadge(enriched.latestStatus)}
-                                      </>
+                                  <div className="mt-0.5 flex flex-col gap-1">
+                                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                                      <span>{enriched.woidCount} WOID{enriched.woidCount !== 1 ? "s" : ""}</span>
+                                      <span className="text-gray-300">|</span>
+                                      <span>{enriched.teamCount} team{enriched.teamCount !== 1 ? "s" : ""}</span>
+                                    </div>
+                                    {enriched.teamStatuses && enriched.teamStatuses.length > 0 && (
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {enriched.teamStatuses.map((team: any) => (
+                                          <div key={team.teamId} className="flex items-center gap-1">
+                                            {team.isPriority && (
+                                              <span className="text-[10px] text-yellow-500">⭐</span>
+                                            )}
+                                            <span className="text-[10px] text-gray-500">
+                                              {team.teamName}:
+                                            </span>
+                                            {getStatusBadge(team.status)}
+                                          </div>
+                                        ))}
+                                      </div>
                                     )}
                                   </div>
                                 )}
