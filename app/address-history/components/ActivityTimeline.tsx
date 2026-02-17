@@ -94,6 +94,10 @@ export default function ActivityTimeline({
                     (item.type === "report" && item.workOrderId === selectedWoid)
                 )
               : allItems;
+            
+            // Skip rendering this date if no items after filtering
+            if (items.length === 0) return null;
+            
             return (
               <div key={dateKey} className="mb-6 last:mb-0">
                 {/* Sticky date header */}
