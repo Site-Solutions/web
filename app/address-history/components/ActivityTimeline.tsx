@@ -140,7 +140,14 @@ export default function ActivityTimeline({
                                     <>
                                       {activity.teamName}
                                       {activity.report.isNewReport ? (
-                                        " filed new report"
+                                        <>
+                                          {" filed new report"}
+                                          {activity.report.date && (
+                                            <span className="text-gray-500 text-xs ml-1">
+                                              (work scheduled for {formatDate(activity.report.date)})
+                                            </span>
+                                          )}
+                                        </>
                                       ) : activity.report.status === "complete" ? (
                                         <>
                                           {" "}
