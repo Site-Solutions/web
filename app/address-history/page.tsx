@@ -158,7 +158,7 @@ export default function AddressHistoryPage() {
           (dr: { workOrderId: string; reports: Array<any> }) =>
             dr.reports.map((report: any) => ({
               type: "report" as const,
-              date: report.date, // Use the work date, not creation time
+              date: report._creationTime, // Use log creation time (when report was filed or status was updated)
               workOrderId: dr.workOrderId,
               report,
               teamName: report.taskForceId ? taskForceMap.get(report.taskForceId) || "Unknown Team" : undefined,
