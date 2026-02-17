@@ -210,14 +210,29 @@ export default function AddressHistoryPage() {
   const getWoidStatus = useCallback(
     (woid: string) => {
       const teams = woidTeamMap.get(woid) || [];
-      const hasVoid = teams.some((t) => t.status === "void");
-      const allComplete = teams.length > 0 && teams.every((t) => t.status === "complete");
-      if (hasVoid) return "void";
-      if (allComplete) return "complete";
-      if (teams.length > 0) return "in_progress";
-      return "not_started";
+      const priorityTeamId = project?.completingTeamId;
+      
+      if (priorityTeamId) {
+        // Use only priority team's status
+        const priorityTeam = teams.find((t) => t.taskForceId === priorityTeamId);
+        if (priorityTeam) {
+          if (priorityTeam.status === "void") return "void";
+          if (priorityTeam.status === "complete") return "complete";
+          return "in_progress";
+        }
+        // Priority team hasn't started this WOID yet
+        return "not_started";
+      } else {
+        // Fallback: all teams must complete
+        const hasVoid = teams.some((t) => t.status === "void");
+        const allComplete = teams.length > 0 && teams.every((t) => t.status === "complete");
+        if (hasVoid) return "void";
+        if (allComplete) return "complete";
+        if (teams.length > 0) return "in_progress";
+        return "not_started";
+      }
     },
-    [woidTeamMap]
+    [woidTeamMap, project]
   );
 
   // --- Lightbox navigation ---
