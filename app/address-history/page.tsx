@@ -43,6 +43,12 @@ export default function AddressHistoryPage() {
     address && projectId ? { address, projectId } : "skip"
   );
 
+  // Get project to find priority team
+  const project = useQuery(
+    api.projects.getProject,
+    projectId ? { projectId } : "skip"
+  );
+
   // --- Helpers ---
   const formatDate = useCallback((timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -76,7 +82,7 @@ export default function AddressHistoryPage() {
       // Build WOID team map
       const _woidTeamMap = new Map<
         string,
-        Array<{ teamName: string; status: string; completionDate?: number }>
+        Array<{ taskForceId: string; teamName: string; status: string; completionDate?: number }>
       >();
       for (const assignment of historyData.woidAssignments) {
         if (!_woidTeamMap.has(assignment.workOrderId)) {
@@ -85,6 +91,7 @@ export default function AddressHistoryPage() {
       }
       for (const taskForceGroup of historyData.taskForceAssignments) {
         const teams = taskForceGroup.teams.map((team: any) => ({
+          taskForceId: team.taskForceId,
           teamName: team.taskForceName,
           status: team.status,
           completionDate: team.completionDate,
@@ -107,16 +114,32 @@ export default function AddressHistoryPage() {
         _filesByWoid.get(woid)!.push(file);
       }
 
-      // Stats
+      // Stats - based on priority team if set, otherwise all teams
+      const priorityTeamId = project?.completingTeamId;
       let complete = 0,
         voidCount = 0,
         inProgress = 0;
+      
       for (const [, teams] of _woidTeamMap.entries()) {
-        const hasVoid = teams.some((t) => t.status === "void");
-        const allComplete = teams.length > 0 && teams.every((t) => t.status === "complete");
-        if (hasVoid) voidCount++;
-        else if (allComplete) complete++;
-        else inProgress++;
+        if (priorityTeamId) {
+          // Only check priority team's status
+          const priorityTeam = teams.find((t) => t.taskForceId === priorityTeamId);
+          if (priorityTeam) {
+            if (priorityTeam.status === "void") voidCount++;
+            else if (priorityTeam.status === "complete") complete++;
+            else inProgress++;
+          } else {
+            // Priority team hasn't started this WOID yet
+            inProgress++;
+          }
+        } else {
+          // Fallback: all teams must complete
+          const hasVoid = teams.some((t) => t.status === "void");
+          const allComplete = teams.length > 0 && teams.every((t) => t.status === "complete");
+          if (hasVoid) voidCount++;
+          else if (allComplete) complete++;
+          else inProgress++;
+        }
       }
       const total = _woidTeamMap.size;
       const percentage = total > 0 ? Math.round((complete / total) * 100) : 0;
@@ -182,7 +205,7 @@ export default function AddressHistoryPage() {
         groupedTimeline: _groupedTimeline,
         imageFiles: _imageFiles,
       };
-    }, [historyData, timelineFilter]);
+    }, [historyData, timelineFilter, project]);
 
   const getWoidStatus = useCallback(
     (woid: string) => {
@@ -383,6 +406,7 @@ export default function AddressHistoryPage() {
                     woidTeamMap={woidTeamMap}
                     selectedWoid={selectedWoid}
                     formatDate={formatDate}
+                    priorityTeamId={project?.completingTeamId}
                   />
                 )}
 
