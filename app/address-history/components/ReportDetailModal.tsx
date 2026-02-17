@@ -54,7 +54,7 @@ export default function ReportDetailModal({
           <div>
             <h3 className="text-lg font-bold text-gray-900">Daily Report</h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {formatDate(report._creationTime)} at {formatTime(report._creationTime)}
+              {formatDate(report.date)}
             </p>
           </div>
           <button
