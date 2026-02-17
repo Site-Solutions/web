@@ -51,10 +51,13 @@ export default function AddressHistoryPage() {
 
   // --- Helpers ---
   const formatDate = useCallback((timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString("en-US", {
+    const date = new Date(timestamp);
+    // Use UTC to avoid timezone shifting dates
+    return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
+      timeZone: "UTC", // Force UTC to prevent date shifting
     });
   }, []);
 
