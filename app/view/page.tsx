@@ -87,6 +87,12 @@ export default function ViewPage() {
       latestStatus?: string;
       latestReportDate?: number;
       woids: string[];
+      teamStatuses?: Array<{
+        teamId: string;
+        teamName: string;
+        status: string;
+        isPriority: boolean;
+      }>;
     }>();
     if (searchResults) {
       for (const r of searchResults) {
