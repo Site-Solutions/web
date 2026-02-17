@@ -8,7 +8,7 @@ type TimelineItem =
       type: "report";
       date: number;
       workOrderId: string;
-      report: any;
+      report: any & { isNewReport?: boolean };
       teamName?: string;
     }
   | {
@@ -135,7 +135,9 @@ export default function ActivityTimeline({
                                   {activity.teamName ? (
                                     <>
                                       {activity.teamName}
-                                      {activity.report.completionStatus === "complete" ? (
+                                      {activity.report.isNewReport ? (
+                                        " filed new report"
+                                      ) : activity.report.completionStatus === "complete" ? (
                                         <>
                                           {" "}
                                           <span className="text-green-600 font-semibold">
@@ -150,7 +152,12 @@ export default function ActivityTimeline({
                                           </span>
                                         </>
                                       ) : (
-                                        " worked on (still incomplete)"
+                                        <>
+                                          {" "}
+                                          <span className="text-gray-600">
+                                            updated status
+                                          </span>
+                                        </>
                                       )}
                                     </>
                                   ) : (
