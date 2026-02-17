@@ -51,17 +51,11 @@ export default function AddressHistoryPage() {
 
   // --- Helpers ---
   const formatDate = useCallback((timestamp: number) => {
-    const date = new Date(timestamp);
-    // Get UTC date components to avoid timezone shifting
-    const year = date.getUTCFullYear();
-    const month = date.getUTCMonth(); // 0-based
-    const day = date.getUTCDate();
-    
-    // Month names for formatting
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
-    // Manually format to avoid any timezone issues
-    return `${monthNames[month]} ${day}, ${year}`;
+    // Use toDateString() like the timeline grouping does
+    const dateStr = new Date(timestamp).toDateString();
+    // Parse and reformat: "Wed Oct 24 2024" -> "Oct 24, 2024"
+    const parts = dateStr.split(" ");
+    return `${parts[1]} ${parts[2]}, ${parts[3]}`;
   }, []);
 
   const formatTime = useCallback((timestamp: number) => {
