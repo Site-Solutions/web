@@ -109,7 +109,23 @@ export default function ImageLightbox({
           src={image.url}
           alt={image.name}
           className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
-          crossOrigin="anonymous"
+          onError={(e) => {
+            // If image fails to load in modal, show error message
+            const target = e.target as HTMLImageElement;
+            target.style.display = "none";
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `
+                <div class="flex flex-col items-center gap-3 text-white p-8">
+                  <svg class="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p class="text-lg font-medium">Unable to load image</p>
+                  <p class="text-sm text-white/70">Try opening the original file instead</p>
+                </div>
+              `;
+            }
+          }}
         />
       </div>
     </div>
