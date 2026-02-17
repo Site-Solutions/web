@@ -139,18 +139,18 @@ export default function ActivityTimeline({
                                         <>
                                           {" "}
                                           <span className="text-green-600 font-semibold">
-                                            marked as complete
+                                            completed work
                                           </span>
                                         </>
                                       ) : activity.report.completionStatus === "void" ? (
                                         <>
                                           {" "}
                                           <span className="text-orange-600 font-semibold">
-                                            marked as void
+                                            voided work
                                           </span>
                                         </>
                                       ) : (
-                                        " filed report"
+                                        " worked on (still incomplete)"
                                       )}
                                     </>
                                   ) : (
