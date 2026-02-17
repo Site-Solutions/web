@@ -70,7 +70,7 @@ export default function AddressHistoryPage() {
     useMemo(() => {
       if (!historyData)
         return {
-          woidTeamMap: new Map<string, Array<{ teamName: string; status: string; completionDate?: number }>>(),
+          woidTeamMap: new Map<string, Array<{ taskForceId: string; teamName: string; status: string; completionDate?: number }>>(),
           reportsByWoid: new Map<string, Array<any>>(),
           filesByWoid: new Map<string, Array<any>>(),
           stats: { complete: 0, inProgress: 0, void: 0, total: 0, percentage: 0 },
