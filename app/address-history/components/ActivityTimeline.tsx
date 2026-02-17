@@ -135,21 +135,22 @@ export default function ActivityTimeline({
                                   {activity.teamName ? (
                                     <>
                                       {activity.teamName}
-                                      {activity.report.completionStatus && (
+                                      {activity.report.completionStatus === "complete" ? (
                                         <>
-                                          {" marked as "}
-                                          <span
-                                            className={`font-semibold ${
-                                              activity.report.completionStatus === "complete"
-                                                ? "text-green-600"
-                                                : activity.report.completionStatus === "void"
-                                                  ? "text-orange-600"
-                                                  : "text-gray-600"
-                                            }`}
-                                          >
-                                            {activity.report.completionStatus}
+                                          {" "}
+                                          <span className="text-green-600 font-semibold">
+                                            marked as complete
                                           </span>
                                         </>
+                                      ) : activity.report.completionStatus === "void" ? (
+                                        <>
+                                          {" "}
+                                          <span className="text-orange-600 font-semibold">
+                                            marked as void
+                                          </span>
+                                        </>
+                                      ) : (
+                                        " filed report"
                                       )}
                                     </>
                                   ) : (
