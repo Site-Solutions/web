@@ -413,6 +413,7 @@ export default function AddressHistoryPage() {
                     onSelectReport={setSelectedReport}
                     formatDate={formatDate}
                     formatTime={formatTime}
+                    selectedWoid={selectedWoid}
                   />
                 )}
 
@@ -439,6 +440,7 @@ export default function AddressHistoryPage() {
                       setSelectedImage({ url: img.url, name: img.name, index: img.index })
                     }
                     formatDate={formatDate}
+                    selectedWoid={selectedWoid}
                   />
                 )}
               </div>

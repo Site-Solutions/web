@@ -16,6 +16,7 @@ interface FilesGalleryProps {
   files: FileData[];
   onSelectImage: (image: { url: string; name: string; index: number }) => void;
   formatDate: (timestamp: number) => string;
+  selectedWoid: string | null;
 }
 
 function isImageFile(fileName: string, fileType?: string): boolean {
@@ -28,15 +29,23 @@ export default function FilesGallery({
   files,
   onSelectImage,
   formatDate,
+  selectedWoid,
 }: FilesGalleryProps) {
-  const images = files.filter((f) => isImageFile(f.name, f.fileType));
-  const documents = files.filter((f) => !isImageFile(f.name, f.fileType));
+  // Filter by selected WOID if one is selected
+  const filteredFiles = selectedWoid
+    ? files.filter((f) => f.workOrderId === selectedWoid)
+    : files;
+  
+  const images = filteredFiles.filter((f) => isImageFile(f.name, f.fileType));
+  const documents = filteredFiles.filter((f) => !isImageFile(f.name, f.fileType));
 
-  if (files.length === 0) {
+  if (filteredFiles.length === 0) {
     return (
       <div className="text-center py-16 text-gray-400">
         <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-        <p className="text-sm">No files uploaded yet</p>
+        <p className="text-sm">
+          {selectedWoid ? "No files for this work order" : "No files uploaded yet"}
+        </p>
       </div>
     );
   }
@@ -46,7 +55,7 @@ export default function FilesGallery({
       {/* File count summary */}
       <div className="flex items-center gap-3 mb-5">
         <h3 className="text-base font-semibold text-gray-900">
-          Files ({files.length})
+          Files ({filteredFiles.length})
         </h3>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           {images.length > 0 && (

@@ -25,6 +25,7 @@ interface ActivityTimelineProps {
   onSelectReport: (report: any) => void;
   formatDate: (timestamp: number) => string;
   formatTime: (timestamp: number) => string;
+  selectedWoid: string | null;
 }
 
 function TicketStatusBadge({ status }: { status: string }) {
@@ -49,6 +50,7 @@ export default function ActivityTimeline({
   onSelectReport,
   formatDate,
   formatTime,
+  selectedWoid,
 }: ActivityTimelineProps) {
   const dateKeys = Object.keys(groupedTimeline);
 
@@ -82,7 +84,15 @@ export default function ActivityTimeline({
       <div className="max-h-[600px] overflow-y-auto pr-1">
         {dateKeys.length > 0 ? (
           dateKeys.map((dateKey) => {
-            const items = groupedTimeline[dateKey];
+            // Filter items by selected WOID if one is selected
+            const allItems = groupedTimeline[dateKey];
+            const items = selectedWoid
+              ? allItems.filter(
+                  (item) =>
+                    item.type === "ticket_update" ||
+                    (item.type === "report" && item.workOrderId === selectedWoid)
+                )
+              : allItems;
             return (
               <div key={dateKey} className="mb-6 last:mb-0">
                 {/* Sticky date header */}
