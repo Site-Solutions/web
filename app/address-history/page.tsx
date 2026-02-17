@@ -150,7 +150,7 @@ export default function AddressHistoryPage() {
           (dr: { workOrderId: string; reports: Array<any> }) =>
             dr.reports.map((report: any) => ({
               type: "report" as const,
-              date: report._creationTime,
+              date: report.date, // Use the work date, not creation time
               workOrderId: dr.workOrderId,
               report,
             }))
