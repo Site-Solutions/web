@@ -9,6 +9,7 @@ type TimelineItem =
       date: number;
       workOrderId: string;
       report: any;
+      teamName?: string;
     }
   | {
       type: "ticket_update";
@@ -131,7 +132,29 @@ export default function ActivityTimeline({
                               <span className="flex items-center gap-1.5">
                                 <FileText className="w-3.5 h-3.5 text-green-600" />
                                 <span className="font-medium text-sm text-gray-900">
-                                  Report Filed
+                                  {activity.teamName ? (
+                                    <>
+                                      {activity.teamName}
+                                      {activity.report.completionStatus && (
+                                        <>
+                                          {" marked as "}
+                                          <span
+                                            className={`font-semibold ${
+                                              activity.report.completionStatus === "complete"
+                                                ? "text-green-600"
+                                                : activity.report.completionStatus === "void"
+                                                  ? "text-orange-600"
+                                                  : "text-gray-600"
+                                            }`}
+                                          >
+                                            {activity.report.completionStatus}
+                                          </span>
+                                        </>
+                                      )}
+                                    </>
+                                  ) : (
+                                    "Report Filed"
+                                  )}
                                 </span>
                               </span>
                               <span className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px] font-mono text-gray-600">

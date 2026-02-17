@@ -144,6 +144,14 @@ export default function AddressHistoryPage() {
       const total = _woidTeamMap.size;
       const percentage = total > 0 ? Math.round((complete / total) * 100) : 0;
 
+      // Create a taskForceId to team name map
+      const taskForceMap = new Map<string, string>();
+      for (const [woid, teams] of _woidTeamMap.entries()) {
+        for (const team of teams) {
+          taskForceMap.set(team.taskForceId, team.teamName);
+        }
+      }
+
       // Timeline
       const _timeline = [
         ...historyData.dailyReports.flatMap(
@@ -153,6 +161,7 @@ export default function AddressHistoryPage() {
               date: report.date, // Use the work date, not creation time
               workOrderId: dr.workOrderId,
               report,
+              teamName: report.taskForceId ? taskForceMap.get(report.taskForceId) || "Unknown Team" : undefined,
             }))
         ),
         ...historyData.tickets.flatMap(
