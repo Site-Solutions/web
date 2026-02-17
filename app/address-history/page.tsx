@@ -52,19 +52,16 @@ export default function AddressHistoryPage() {
   // --- Helpers ---
   const formatDate = useCallback((timestamp: number) => {
     const date = new Date(timestamp);
-    // Use UTC methods to avoid timezone shifting
+    // Get UTC date components to avoid timezone shifting
     const year = date.getUTCFullYear();
-    const month = date.getUTCMonth();
+    const month = date.getUTCMonth(); // 0-based
     const day = date.getUTCDate();
     
-    // Create a new date using UTC components (this will be treated as local time but has correct day)
-    const utcDate = new Date(year, month, day);
+    // Month names for formatting
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     
-    return utcDate.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    // Manually format to avoid any timezone issues
+    return `${monthNames[month]} ${day}, ${year}`;
   }, []);
 
   const formatTime = useCallback((timestamp: number) => {
