@@ -137,14 +137,14 @@ export default function ActivityTimeline({
                                       {activity.teamName}
                                       {activity.report.isNewReport ? (
                                         " filed new report"
-                                      ) : activity.report.completionStatus === "complete" ? (
+                                      ) : activity.report.status === "complete" ? (
                                         <>
                                           {" "}
                                           <span className="text-green-600 font-semibold">
                                             completed work
                                           </span>
                                         </>
-                                      ) : activity.report.completionStatus === "void" ? (
+                                      ) : activity.report.status === "void" ? (
                                         <>
                                           {" "}
                                           <span className="text-orange-600 font-semibold">
