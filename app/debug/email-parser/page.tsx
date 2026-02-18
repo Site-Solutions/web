@@ -354,7 +354,7 @@ National Grid - PENDING`);
                           className={
                             part.isMatch
                               ? `${fieldColors[part.field || ""] || "bg-gray-200"} border-2 rounded px-1`
-                              : "text-gray-700"
+                              : "text-gray-900"
                           }
                           title={part.isMatch ? `${part.field}: ${part.value}` : undefined}
                         >
