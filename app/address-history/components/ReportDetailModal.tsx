@@ -9,6 +9,7 @@ interface ReportDetailModalProps {
   onClose: () => void;
   onViewImage: (image: { url: string; name: string }) => void;
   formatDate: (timestamp: number) => string;
+  formatDateUTC: (timestamp: number) => string;
   formatTime: (timestamp: number) => string;
 }
 
@@ -23,6 +24,7 @@ export default function ReportDetailModal({
   onClose,
   onViewImage,
   formatDate,
+  formatDateUTC,
   formatTime,
 }: ReportDetailModalProps) {
   useEffect(() => {
@@ -54,7 +56,7 @@ export default function ReportDetailModal({
           <div>
             <h3 className="text-lg font-bold text-gray-900">Daily Report</h3>
             <p className="text-sm text-gray-500 mt-0.5">
-              {formatDate(report.date)}
+              Work Date: {formatDateUTC(report.date)}
             </p>
           </div>
           <button

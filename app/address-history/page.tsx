@@ -491,6 +491,7 @@ export default function AddressHistoryPage() {
             setSelectedImage({ url: img.url, name: img.name, index: idx >= 0 ? idx : 0 });
           }}
           formatDate={formatDate}
+          formatDateUTC={formatDateUTC}
           formatTime={formatTime}
         />
       )}
