@@ -58,6 +58,17 @@ export default function AddressHistoryPage() {
     return `${parts[1]} ${parts[2]}, ${parts[3]}`;
   }, []);
 
+  // Format date using UTC to avoid timezone shifting (for work scheduled dates)
+  const formatDateUTC = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const day = date.getUTCDate();
+    
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${monthNames[month]} ${day}, ${year}`;
+  }, []);
+
   const formatTime = useCallback((timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {
       hour: "2-digit",
@@ -421,6 +432,7 @@ export default function AddressHistoryPage() {
                     onFilterChange={setTimelineFilter}
                     onSelectReport={setSelectedReport}
                     formatDate={formatDate}
+                    formatDateUTC={formatDateUTC}
                     formatTime={formatTime}
                     selectedWoid={selectedWoid}
                   />

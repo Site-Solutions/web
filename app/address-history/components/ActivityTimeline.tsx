@@ -25,6 +25,7 @@ interface ActivityTimelineProps {
   onFilterChange: (filter: "all" | "reports" | "tickets") => void;
   onSelectReport: (report: any) => void;
   formatDate: (timestamp: number) => string;
+  formatDateUTC: (timestamp: number) => string;
   formatTime: (timestamp: number) => string;
   selectedWoid: string | null;
 }
@@ -50,6 +51,7 @@ export default function ActivityTimeline({
   onFilterChange,
   onSelectReport,
   formatDate,
+  formatDateUTC,
   formatTime,
   selectedWoid,
 }: ActivityTimelineProps) {
@@ -144,7 +146,7 @@ export default function ActivityTimeline({
                                           {" filed new report"}
                                           {activity.report.date && (
                                             <span className="text-gray-500 text-xs ml-1">
-                                              (work scheduled for {formatDate(activity.report.date)})
+                                              (work scheduled for {formatDateUTC(activity.report.date)})
                                             </span>
                                           )}
                                         </>
