@@ -107,12 +107,17 @@ export function AutoSyncUser() {
 
     // Check if Clerk has a real name (not a default name)
     const clerkHasRealName = clerkUserName && !isDefaultName(clerkUserName);
+    
+    // If Convex has a default name, always sync if Clerk has a different name OR if Clerk has a real name
+    // This handles the case where Clerk might update from Google OAuth
+    const convexHasDefaultName = convexUserName && isDefaultName(convexUserName);
+    const namesAreDifferent = convexUserName !== clerkUserName;
 
     // Sync if:
     // 1. Convex has no name and Clerk has any name, OR
-    // 2. Convex has a default name and Clerk has a real name (even if they currently match, Clerk might update)
+    // 2. Convex has a default name AND (Clerk has a real name OR names are different)
     const needsSync = (!convexUserName && clerkUserName) || 
-                      (convexUserName && isDefaultName(convexUserName) && clerkHasRealName);
+                      (convexHasDefaultName && (clerkHasRealName || namesAreDifferent));
 
     console.log("🔍 AutoSyncUser: Checking if sync needed:", {
       email,
