@@ -120,7 +120,7 @@ export function AutoSyncUser() {
       convexUserName,
       clerkUserName,
       isDefaultName: convexUserName ? isDefaultName(convexUserName) : true,
-      clerkHasRealName,
+      convexHasDefaultName,
       needsSync,
     });
 
