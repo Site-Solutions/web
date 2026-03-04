@@ -3,13 +3,24 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useUser, useClerk, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useQuery } from "convex/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { api } from "@/convex/_generated/api";
 import { colors } from "@/lib/colors";
 
 export default function Header() {
   const { user } = useUser();
   const { signOut } = useClerk();
+  const convexUser = useQuery(api.users.getCurrentUser);
+
+  // Prefer Convex user name (synced from SSO/OAuth) - mobile app uses this
+  // Clerk's fullName can lag behind after SSO sign-in
+  const displayName =
+    convexUser?.name?.trim() ||
+    user?.fullName ||
+    user?.emailAddresses?.[0]?.emailAddress ||
+    "User";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -118,7 +129,7 @@ export default function Header() {
                   {user?.imageUrl ? (
                     <Image
                       src={user.imageUrl}
-                      alt={user.fullName || "User"}
+                      alt={displayName}
                       width={32}
                       height={32}
                       className="h-8 w-8 rounded-full"
@@ -132,7 +143,7 @@ export default function Header() {
                     </div>
                   )}
                   <span className="hidden sm:block text-sm font-medium">
-                    {user?.fullName || user?.emailAddresses?.[0]?.emailAddress || "User"}
+                    {displayName}
                   </span>
                   <svg
                     className={`h-4 w-4 transition-transform ${isUserMenuOpen ? "rotate-180" : ""
@@ -160,7 +171,7 @@ export default function Header() {
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 border border-gray-200">
                       <div className="px-4 py-2 border-b border-gray-200">
                         <p className="text-sm font-medium text-gray-900">
-                          {user?.fullName || "User"}
+                          {displayName}
                         </p>
                         <p className="text-xs text-gray-500 truncate">
                           {user?.emailAddresses?.[0]?.emailAddress}
