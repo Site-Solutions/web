@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
+import { AutoSyncUser } from "@/components/AutoSyncUser";
 import Header from "@/components/Header";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={inter.className}>
           <ConvexClientProvider>
+            <AutoSyncUser />
             <div className="min-h-screen bg-gray-50">
               <Header />
               <main>{children}</main>
