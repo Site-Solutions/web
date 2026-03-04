@@ -105,8 +105,14 @@ export function AutoSyncUser() {
       return false;
     };
 
+    // Check if Clerk has a real name (not a default name)
+    const clerkHasRealName = clerkUserName && !isDefaultName(clerkUserName);
+
+    // Sync if:
+    // 1. Convex has no name and Clerk has any name, OR
+    // 2. Convex has a default name and Clerk has a real name (even if they currently match, Clerk might update)
     const needsSync = (!convexUserName && clerkUserName) || 
-                      (convexUserName && clerkUserName && isDefaultName(convexUserName) && clerkUserName !== convexUserName);
+                      (convexUserName && isDefaultName(convexUserName) && clerkHasRealName);
 
     console.log("🔍 AutoSyncUser: Checking if sync needed:", {
       email,
