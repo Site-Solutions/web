@@ -124,19 +124,34 @@ export function AutoSyncUser() {
       needsSync,
     });
 
-    // If Convex user has no name OR has a default/temporary name, and Clerk has a real name, sync it
+    // If Convex user has no name OR has a default/temporary name, sync it
     if (needsSync && clerkUserName) {
+      // For default names, allow re-syncing if Clerk name changes (e.g., from Google OAuth)
+      // For non-default names, only sync once per session
+      const shouldSync = convexHasDefaultName || !hasSyncedRef.current;
+      
+      if (!shouldSync) {
+        console.log("⏭️ AutoSyncUser: Already synced this session (non-default name)");
+        return;
+      }
+
       console.log("🔄 Auto-syncing user name from Clerk:", {
         email,
         clerkName: clerkUserName,
         convexName: convexUserName,
+        reason: !convexUserName ? "no name" : "default name",
       });
 
-      hasSyncedRef.current = true; // Mark as synced to prevent multiple calls
+      // Only mark as synced if it's not a default name (allow re-syncing default names)
+      if (!convexHasDefaultName) {
+        hasSyncedRef.current = true;
+      }
 
       syncUserFromClerk({ email })
         .then((result) => {
           console.log("✅ User name auto-synced:", result);
+          // Mark as synced after successful sync
+          hasSyncedRef.current = true;
         })
         .catch((error) => {
           console.error("❌ Failed to auto-sync user name:", error);
