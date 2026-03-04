@@ -43,7 +43,7 @@ export default function UploadPage() {
 
   // Get teams for the organization
   const teams = useQuery(
-    api.taskForces.getTaskForces,
+    api.taskForces.getTaskForcesByOrganization,
     organizationId ? { organizationId } : "skip"
   );
 

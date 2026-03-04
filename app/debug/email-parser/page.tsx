@@ -242,7 +242,7 @@ National Grid - PENDING`);
                     {result.parsed.ticketNumber && (
                       <div>
                         <span className="text-sm font-medium text-gray-600">Ticket Number:</span>
-                        <div className="mt-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md font-mono text-sm">
+                        <div className="mt-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md font-mono text-sm text-gray-900">
                           {result.parsed.ticketNumber}
                         </div>
                       </div>
@@ -251,7 +251,7 @@ National Grid - PENDING`);
                     {result.parsed.relocateOf && (
                       <div>
                         <span className="text-sm font-medium text-gray-600">Relocate Of (Old Ticket):</span>
-                        <div className="mt-1 px-3 py-2 bg-orange-50 border border-orange-200 rounded-md font-mono text-sm">
+                        <div className="mt-1 px-3 py-2 bg-orange-50 border border-orange-200 rounded-md font-mono text-sm text-gray-900">
                           {result.parsed.relocateOf}
                         </div>
                       </div>
@@ -260,7 +260,7 @@ National Grid - PENDING`);
                     {result.parsed.address && (
                       <div>
                         <span className="text-sm font-medium text-gray-600">Address:</span>
-                        <div className="mt-1 px-3 py-2 bg-green-50 border border-green-200 rounded-md font-mono text-sm">
+                        <div className="mt-1 px-3 py-2 bg-green-50 border border-green-200 rounded-md font-mono text-sm text-gray-900">
                           {result.parsed.address}
                         </div>
                       </div>
@@ -269,7 +269,7 @@ National Grid - PENDING`);
                     {result.parsed.startDate && (
                       <div>
                         <span className="text-sm font-medium text-gray-600">Start Date:</span>
-                        <div className="mt-1 px-3 py-2 bg-purple-50 border border-purple-200 rounded-md font-mono text-sm">
+                        <div className="mt-1 px-3 py-2 bg-purple-50 border border-purple-200 rounded-md font-mono text-sm text-gray-900">
                           {new Date(result.parsed.startDate).toLocaleDateString()}
                         </div>
                       </div>
@@ -278,7 +278,7 @@ National Grid - PENDING`);
                     {result.parsed.ticketType && (
                       <div>
                         <span className="text-sm font-medium text-gray-600">Ticket Type:</span>
-                        <div className="mt-1 px-3 py-2 bg-orange-50 border border-orange-200 rounded-md font-mono text-sm">
+                        <div className="mt-1 px-3 py-2 bg-orange-50 border border-orange-200 rounded-md font-mono text-sm text-gray-900">
                           {result.parsed.ticketType}
                         </div>
                       </div>
@@ -293,8 +293,8 @@ National Grid - PENDING`);
                               key={idx}
                               className="px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-md"
                             >
-                              <div className="font-semibold text-sm">{status.company}</div>
-                              <div className="text-sm text-gray-600">{status.status}</div>
+                              <div className="font-semibold text-sm text-gray-900">{status.company}</div>
+                              <div className="text-sm text-gray-700">{status.status}</div>
                             </div>
                           ))}
                         </div>
@@ -354,7 +354,7 @@ National Grid - PENDING`);
                           className={
                             part.isMatch
                               ? `${fieldColors[part.field || ""] || "bg-gray-200"} border-2 rounded px-1`
-                              : "text-gray-700"
+                              : "text-gray-900"
                           }
                           title={part.isMatch ? `${part.field}: ${part.value}` : undefined}
                         >
