@@ -87,15 +87,37 @@ export function AutoSyncUser() {
     const clerkUserName = clerkUser.fullName || 
                           `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
 
+    // Check if the Convex name looks like a default/temporary name
+    // Pattern: "FirstName User" or ends with "User" (extracted from email)
+    const isDefaultName = (name: string) => {
+      if (!name) return true;
+      // Check if it ends with " User" (the default last name we set)
+      if (name.endsWith(" User")) return true;
+      // Check if it's just "User"
+      if (name === "User") return true;
+      // Check if it matches the email extraction pattern (e.g., "Tmctesterson39 User")
+      const emailLocalPart = email.split("@")[0];
+      const nameParts = emailLocalPart.split(".").map(s => s.charAt(0).toUpperCase() + s.slice(1));
+      const extractedFirstName = nameParts[0] || "";
+      const extractedLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "User";
+      const extractedName = `${extractedFirstName} ${extractedLastName}`.trim();
+      if (name === extractedName) return true;
+      return false;
+    };
+
+    const needsSync = (!convexUserName && clerkUserName) || 
+                      (convexUserName && clerkUserName && isDefaultName(convexUserName) && clerkUserName !== convexUserName);
+
     console.log("🔍 AutoSyncUser: Checking if sync needed:", {
       email,
       convexUserName,
       clerkUserName,
-      needsSync: !convexUserName && !!clerkUserName,
+      isDefaultName: convexUserName ? isDefaultName(convexUserName) : true,
+      needsSync,
     });
 
-    // If Convex user has no name but Clerk user has a name, sync it
-    if (!convexUserName && clerkUserName) {
+    // If Convex user has no name OR has a default/temporary name, and Clerk has a real name, sync it
+    if (needsSync && clerkUserName) {
       console.log("🔄 Auto-syncing user name from Clerk:", {
         email,
         clerkName: clerkUserName,
@@ -112,8 +134,8 @@ export function AutoSyncUser() {
           console.error("❌ Failed to auto-sync user name:", error);
           hasSyncedRef.current = false; // Reset on error so we can retry
         });
-    } else if (convexUserName) {
-      console.log("✅ AutoSyncUser: User already has a name, no sync needed");
+    } else if (convexUserName && !isDefaultName(convexUserName)) {
+      console.log("✅ AutoSyncUser: User already has a real name, no sync needed");
     } else if (!clerkUserName) {
       console.log("⏭️ AutoSyncUser: Clerk user has no name, cannot sync");
     }
