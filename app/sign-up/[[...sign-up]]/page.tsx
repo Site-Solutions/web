@@ -14,8 +14,10 @@ export default function SignUpPage() {
         path="/sign-up"
         forceRedirectUrl="/"
         signInUrl="/sign-in"
-        // Force account selection by using redirectUrl which triggers full OAuth flow
         redirectUrl="/"
+        // Enable email-only signup with magic links
+        // Users can sign up with just their email - no password required initially
+        // They'll receive a magic link to complete authentication
       />
     </div>
   );

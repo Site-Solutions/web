@@ -12,6 +12,8 @@ export default function SignInPage() {
         }}
         routing="path"
         path="/sign-in"
+        // Support magic links for passwordless authentication
+        // Users can sign in with just their email via magic link
       />
     </div>
   );

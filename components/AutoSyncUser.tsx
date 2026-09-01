@@ -13,7 +13,11 @@ export function AutoSyncUser() {
   const { userId, isSignedIn, isLoaded: authLoaded } = useAuth();
   const { user: clerkUser, isLoaded: userLoaded } = useUser();
   const syncUserFromClerk = useAction(api.clerkAdmin.syncUserFromClerk);
+  const ensureMyConvexUserFromClerk = useAction(
+    api.clerkAdmin.ensureMyConvexUserFromClerk
+  );
   const hasSyncedRef = useRef(false);
+  const hasEnsureUserRef = useRef(false);
 
   // Get user from Convex using getCurrentUser (uses auth context automatically)
   // Only query if auth is loaded
@@ -163,6 +167,23 @@ export function AutoSyncUser() {
       console.log("⏭️ AutoSyncUser: Clerk user has no name, cannot sync");
     }
   }, [authLoaded, userLoaded, isSignedIn, clerkUser, convexUser, syncUserFromClerk]);
+
+  // Create Convex user row if missing + sync orgs from Clerk (webhooks often skipped in dev).
+  useEffect(() => {
+    if (!authLoaded || !isSignedIn || convexUser === undefined) return;
+    const needsEnsure =
+      convexUser === null || convexUser.organizationIds.length === 0;
+    if (!needsEnsure || hasEnsureUserRef.current) return;
+    hasEnsureUserRef.current = true;
+    ensureMyConvexUserFromClerk({})
+      .then((r) => {
+        console.log("✅ Convex user ensured from Clerk:", r);
+      })
+      .catch((err) => {
+        console.error("❌ ensureMyConvexUserFromClerk failed:", err);
+        hasEnsureUserRef.current = false;
+      });
+  }, [authLoaded, isSignedIn, convexUser, ensureMyConvexUserFromClerk]);
 
   return null; // This component doesn't render anything
 }

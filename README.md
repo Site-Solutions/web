@@ -20,6 +20,27 @@ npm install
 
 ### 2. Configure Environment Variables
 
+**Local dev: pick which backend `.env` file to load**
+
+- `npm run dev` — **`next dev`** + **`.env.dev.local`** (Convex dev + Clerk test).
+- `npm run dev:prod-env` — still **`next dev`**, but **`.env.prod.local`** (prod Convex + live Clerk). The name avoids calling this `prod`, which usually means **`next start`** / `NODE_ENV=production`.
+- `npm run build:prod-env` — **`next build`** baked with prod `NEXT_PUBLIC_*` vars (e.g. before testing a prod-like bundle locally).
+- **`npm run build`** then **`npm run start`** — actual production-style server (what you deploy).
+
+Copy **`.env.example`** to those two files and fill in values. Keep **`.env.local`** free of secrets (or empty); Next.js merges it and could override `dotenv` otherwise.
+
+**Localhost + organizations:** Clerk **live** (`pk_live_…`) often does not work on `http://localhost`. Use **`npm run dev`** (test Clerk + Convex **dev** deployment). Then verify:
+
+1. **Convex dev** env: `EXPO_PUBLIC_CLERK_HOSTNAME` = test instance hostname (no `https://`), same as `NEXT_PUBLIC_CLERK_HOSTNAME` in `.env.dev.local`.
+2. **Convex dev** env: `CLERK_SECRET_KEY` = **`sk_test_…`** for that Clerk app (needed for org sync + debugging).
+3. **Clerk (test)** → Webhooks → URL is your **dev** Convex site + **`/clerk`**, secret matches Convex `EXPO_PUBLIC_CLERK_WEBHOOK_SECRET`.
+4. **Convex** → Settings → **Auth** uses that same Clerk test instance (JWT issuer), so `getCurrentUser` matches `users.tokenIdentifier` from webhooks.
+
+If you see “no organization”, open **Projects** — the page includes a longer troubleshooting panel.
+
+<details>
+<summary>Older single-file `.env.local` instructions</summary>
+
 Create a `.env.local` file in the root directory:
 
 **Option A: Using Production Keys (Recommended if you have production org)**
@@ -64,6 +85,8 @@ NEXT_PUBLIC_CONVEX_URL=https://perceptive-crow-99.convex.cloud
 NEXT_PUBLIC_CONVEX_DEPLOYMENT=dev:perceptive-crow-99
 ```
 
+</details>
+
 ### 3. Link to Shared Convex Backend
 
 This web app uses the same Convex backend as the mobile app. The `convex.json` file is configured to reference the app's convex functions:
@@ -82,6 +105,8 @@ To generate the Convex API types, you can either:
 
 ```bash
 npm run dev
+# or next dev against production Convex + Clerk:
+npm run dev:prod-env
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.

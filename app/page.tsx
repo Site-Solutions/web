@@ -43,7 +43,7 @@ export default async function HomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Link
           href="/search"
           className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
@@ -52,6 +52,19 @@ export default async function HomePage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Search</h2>
           <p className="text-gray-600">
             Search for addresses and work orders
+          </p>
+        </Link>
+
+        <Link
+          href="/projects"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">📋</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Daily reports
+          </h2>
+          <p className="text-gray-600">
+            View and update daily reports by project and team
           </p>
         </Link>
 
@@ -78,7 +91,7 @@ export default async function HomePage() {
         </Link>
 
         <Link
-          href="/search"
+          href="/address-history"
           className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
         >
           <div className="text-3xl mb-3">📍</div>
@@ -86,6 +99,60 @@ export default async function HomePage() {
           <p className="text-gray-600">
             View detailed address history
           </p>
+        </Link>
+
+        <Link
+          href="/clients"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">👥</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Clients</h2>
+          <p className="text-gray-600">Manage clients and link them to projects</p>
+        </Link>
+
+        <Link
+          href="/teams"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">🛠️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Teams</h2>
+          <p className="text-gray-600">Manage crews, members, and assignments</p>
+        </Link>
+
+        <Link
+          href="/earnings"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">💰</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Earnings</h2>
+          <p className="text-gray-600">Revenue, payments, and monthly trends</p>
+        </Link>
+
+        <Link
+          href="/dashboard"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">📈</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Daily Overview</h2>
+          <p className="text-gray-600">Completion stats across all projects</p>
+        </Link>
+
+        <Link
+          href="/toolbox-talks"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">🦺</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Toolbox Talks</h2>
+          <p className="text-gray-600">Author safety talks and track sign-offs</p>
+        </Link>
+
+        <Link
+          href="/settings"
+          className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow border border-gray-200 hover:border-orange-500"
+        >
+          <div className="text-3xl mb-3">⚙️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Settings</h2>
+          <p className="text-gray-600">Organization, users, and branding</p>
         </Link>
       </div>
     </div>
