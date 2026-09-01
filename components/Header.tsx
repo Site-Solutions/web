@@ -83,7 +83,7 @@ export default function Header() {
             {/* Hamburger menu for mobile */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-md text-white focus:outline-none"
+              className="hidden p-2 rounded-md text-white focus:outline-none"
               style={{ 
                 transition: 'background-color 0.2s',
               }}
