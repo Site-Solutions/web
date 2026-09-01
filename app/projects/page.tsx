@@ -146,7 +146,7 @@ export default function ProjectsPage() {
         {projects.map((p: Doc<"projects">) => (
           <li key={p._id} className="flex items-stretch">
             <Link
-              href={`/projects/${p._id}/daily-reports`}
+              href={`/projects/${p._id}`}
               className="flex min-w-0 flex-1 items-center gap-3 px-4 py-4 hover:bg-gray-50 transition-colors"
             >
               <FolderOpen

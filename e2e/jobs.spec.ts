@@ -7,7 +7,9 @@ test.describe("project jobs", () => {
   async function openFirstProjectJobs(page: import("@playwright/test").Page) {
     await page.goto("/projects");
     const href = await page.locator('a[href*="/projects/"]').first().getAttribute("href");
-    const base = (href || "").replace(/\/[^/]+$/, "");
+    // Rows link to the project home hub (/projects/{id}); extract the base
+    // rather than stripping a segment so this survives either link target.
+    const base = ((href || "").match(/^\/projects\/[^/]+/) || [""])[0];
     await page.goto(`${base}/jobs`);
     return base;
   }

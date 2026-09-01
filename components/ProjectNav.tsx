@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
+import { colors } from "@/lib/colors";
 
 /**
  * Tab bar shown on every in-project page. Mirrors the mobile app's
  * per-project feature set (daily reports, jobs, invoices, task lists, etc.).
  */
 const TABS: Array<{ label: string; segment: string }> = [
+  { label: "Home", segment: "" },
   { label: "Daily Reports", segment: "daily-reports" },
   { label: "Jobs", segment: "jobs" },
   { label: "Invoices", segment: "invoices" },
@@ -28,18 +30,19 @@ export default function ProjectNav({ projectId }: { projectId: string }) {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <nav className="-mb-px flex gap-1 overflow-x-auto">
           {TABS.map((tab) => {
-            const href = `${base}/${tab.segment}`;
-            const active = pathname.startsWith(href);
+            const href = tab.segment ? `${base}/${tab.segment}` : base;
+            const active = tab.segment ? pathname.startsWith(href) : pathname === base;
             return (
               <Link
-                key={tab.segment}
+                key={tab.segment || "home"}
                 href={href}
                 className={cx(
                   "whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition-colors",
                   active
-                    ? "border-gray-900 text-gray-900"
+                    ? "border-current"
                     : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 )}
+                style={active ? { color: colors.primary } : undefined}
               >
                 {tab.label}
               </Link>
