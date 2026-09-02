@@ -1,0 +1,70 @@
+name: Web E2E (Playwright)
+
+# Certifies the admin-portal Playwright suite against the dev Convex + dev Clerk
+# instance. Runs on Linux with bundled Chromium — no simulator needed.
+#
+# Required repo secrets:
+#   CLERK_SECRET_KEY   - dev Clerk instance secret (sk_test_...), for @clerk/testing sign-in
+#
+# The remaining values are non-secret dev config (public publishable key,
+# public Convex URL) and are written inline below. Move them to secrets/vars
+# if you prefer.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # The Playwright config's webServer runs `npm run dev` (dotenv -e .env.dev.local).
+      # Recreate that env file from non-secret dev config + the Clerk secret.
+      - name: Write dev env
+        env:
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
+        run: |
+          cat > .env.dev.local <<EOF
+          NEXT_PUBLIC_CONVEX_URL=https://perceptive-crow-99.convex.cloud
+          NEXT_PUBLIC_CONVEX_DEPLOYMENT=dev:perceptive-crow-99
+          CONVEX_DEPLOYMENT=dev:perceptive-crow-99
+          NEXT_PUBLIC_CLERK_HOSTNAME=gorgeous-ladybird-14.clerk.accounts.dev
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Z29yZ2VvdXMtbGFkeWJpcmQtMTQuY2xlcmsuYWNjb3VudHMuZGV2JA
+          CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+          NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/
+          NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/
+          EOF
+
+      - name: Run Playwright suite
+        env:
+          CI: "true"
+        run: npx playwright test
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 14

@@ -1,13 +1,19 @@
 "use client";
 
-import { Users, Star } from "lucide-react";
-import type { Id } from "@/convex/_generated/dataModel";
+import { Users, Star, Settings2 } from "lucide-react";
+import { useState } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
+import { api } from "@/convex/_generated/api";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 
 interface TeamsPanelProps {
   woidTeamMap: Map<string, Array<{ taskForceId: string; teamName: string; status: string; completionDate?: number }>>;
   selectedWoid: string | null;
   formatDate: (timestamp: number) => string;
   priorityTeamId?: Id<"taskForces">;
+  projectId?: Id<"projects">;
+  organizationId?: string;
 }
 
 function TeamStatusBadge({ status }: { status: string }) {
@@ -32,10 +38,68 @@ export default function TeamsPanel({
   selectedWoid,
   formatDate,
   priorityTeamId,
+  projectId,
+  organizationId,
 }: TeamsPanelProps) {
+  const { userId } = useAuth();
+  const [expandedWoid, setExpandedWoid] = useState<string | null>(null);
+  
+  // Get current user to check if admin
+  const convexUser = useQuery(
+    api.users.getCurrentUser,
+    userId ? undefined : "skip"
+  );
+  
+  // Get all task forces for the project to show in dropdown
+  const taskForces = useQuery(
+    api.taskForce_project.getTaskForcesByProject,
+    projectId ? { projectId } : "skip"
+  );
+  
+  // Get priority team overrides for all WOIDs
+  const workOrderIds = Array.from(woidTeamMap.keys());
+  const priorityTeamOverrides = useQuery(
+    api.woidAssignments.getPriorityTeamOverrides,
+    projectId && workOrderIds.length > 0
+      ? { workOrderIds, projectId }
+      : "skip"
+  );
+  
+  // Mutation to set priority team override
+  const setPriorityTeamOverride = useMutation(api.woidAssignments.setPriorityTeamOverride);
+  
+  // Check if user is admin
+  const isAdmin = convexUser?.organizationIds?.some(
+    (org: { organizationId: string; role: string }) =>
+      org.organizationId === organizationId && org.role === "admin"
+  ) || false;
+  
   const entries = Array.from(woidTeamMap.entries()).filter(
     ([woid]) => !selectedWoid || woid === selectedWoid
   );
+  
+  const handleSetOverride = async (woid: string, teamId: Id<"taskForces"> | null) => {
+    if (!projectId || !organizationId || !userId) return;
+    
+    try {
+      // Construct token identifier matching the app's format
+      const clerkHostname = process.env.NEXT_PUBLIC_CLERK_HOSTNAME || "clerk.buildsimpli.com";
+      const tokenIdentifier = `https://${clerkHostname}|${userId}`;
+      
+      await setPriorityTeamOverride({
+        workOrderId: woid,
+        projectId,
+        priorityTeamId: teamId,
+        organizationId,
+        tokenIdentifier,
+      });
+      
+      setExpandedWoid(null);
+    } catch (error) {
+      console.error("Failed to set priority team override:", error);
+      alert(`Failed to set override: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  };
 
   if (entries.length === 0) {
     return (
@@ -50,6 +114,11 @@ export default function TeamsPanel({
     <div className="space-y-5">
       {entries.map(([woid, teams]) => {
         const completedCount = teams.filter((t) => t.status === "complete").length;
+        // Get effective priority team (override takes precedence)
+        const overrideTeamId = priorityTeamOverrides?.[woid];
+        const effectivePriorityTeamId = overrideTeamId || priorityTeamId;
+        const hasOverride = !!overrideTeamId;
+        
         return (
           <div key={woid}>
             {/* WOID header */}
@@ -58,13 +127,67 @@ export default function TeamsPanel({
               <span className="text-xs text-gray-400">
                 {completedCount}/{teams.length} complete
               </span>
+              {hasOverride && (
+                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-medium">
+                  Override
+                </span>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => setExpandedWoid(expandedWoid === woid ? null : woid)}
+                  className="ml-auto p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Set priority team override"
+                >
+                  <Settings2 className="w-4 h-4 text-gray-500" />
+                </button>
+              )}
               <div className="h-px flex-1 bg-gray-100" />
             </div>
+            
+            {/* Admin override controls */}
+            {isAdmin && expandedWoid === woid && (
+              <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="text-xs font-semibold text-blue-900 mb-2">
+                  Priority Team Override (Admin Only)
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => handleSetOverride(woid, null)}
+                    className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+                      !hasOverride
+                        ? "bg-gray-200 text-gray-700 cursor-not-allowed"
+                        : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                    }`}
+                    disabled={!hasOverride}
+                  >
+                    Use Project Default
+                  </button>
+                  {taskForces?.map((team: Doc<"taskForces">) => (
+                    <button
+                      key={team._id}
+                      onClick={() => handleSetOverride(woid, team._id)}
+                      className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+                        overrideTeamId === team._id
+                          ? "bg-blue-600 text-white"
+                          : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {team.name}
+                    </button>
+                  ))}
+                </div>
+                {hasOverride && (
+                  <div className="mt-2 text-xs text-blue-700">
+                    Current override: {taskForces?.find((t: Doc<"taskForces">) => t._id === overrideTeamId)?.name || "Unknown"}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Team cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {teams.map((team, idx) => {
-                const isPriorityTeam = priorityTeamId && team.taskForceId === priorityTeamId;
+                const isPriorityTeam = effectivePriorityTeamId && team.taskForceId === effectivePriorityTeamId;
                 return (
                   <div
                     key={idx}
@@ -87,7 +210,11 @@ export default function TeamsPanel({
                         <div className="font-medium text-sm text-gray-900 flex items-center gap-1.5">
                           {team.teamName}
                           {isPriorityTeam && (
-                            <span className="text-xs text-yellow-600 font-semibold">(Priority)</span>
+                            <span className={`text-xs font-semibold ${
+                              hasOverride ? "text-blue-600" : "text-yellow-600"
+                            }`}>
+                              ({hasOverride ? "Override" : "Priority"})
+                            </span>
                           )}
                         </div>
                         {team.completionDate && (

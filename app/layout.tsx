@@ -4,6 +4,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { AutoSyncUser } from "@/components/AutoSyncUser";
 import Header from "@/components/Header";
+import DevLocalhostBanner from "@/components/DevLocalhostBanner";
+import AppTabBar from "@/components/AppTabBar";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -32,9 +34,11 @@ export default function RootLayout({
         <body className={inter.className}>
           <ConvexClientProvider>
             <AutoSyncUser />
-            <div className="min-h-screen bg-gray-50">
+            <DevLocalhostBanner />
+            <div className="min-h-screen bg-gray-50 pb-20">
               <Header />
               <main>{children}</main>
+              <AppTabBar />
             </div>
           </ConvexClientProvider>
         </body>

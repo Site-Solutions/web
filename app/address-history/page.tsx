@@ -444,6 +444,8 @@ export default function AddressHistoryPage() {
                     selectedWoid={selectedWoid}
                     formatDate={formatDate}
                     priorityTeamId={project?.completingTeamId}
+                    projectId={projectId || undefined}
+                    organizationId={project?.organizationId}
                   />
                 )}
 
