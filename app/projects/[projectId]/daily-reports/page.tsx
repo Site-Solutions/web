@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -39,8 +39,23 @@ export default function ProjectDailyReportsPage() {
     projectId ? { projectId } : "skip"
   );
 
-  const [date, setDate] = useState<number>(() => getLocalDateUTCStart(null));
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  // Date + team live in the URL (?date=YYYY-MM-DD&team=…) so that coming BACK
+  // from a report restores the same view. With component state only, back
+  // remounted this page reset to today/first team — losing the user's place.
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [date, setDate] = useState<number>(() => {
+    const q = searchParams.get("date");
+    if (q) {
+      const [y, m, d] = q.split("-").map(Number);
+      if (y && m && d) return getLocalDateUTCStart(new Date(y, m - 1, d));
+    }
+    return getLocalDateUTCStart(null);
+  });
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
+    () => searchParams.get("team"),
+  );
   const [filters, setFilters] = useState<CompletionStatus[]>([
     "complete",
     "void",
@@ -87,6 +102,16 @@ export default function ProjectDailyReportsPage() {
     const d = String(local.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   }, [date]);
+
+  useEffect(() => {
+    const q = new URLSearchParams();
+    q.set("date", dateInputValue);
+    if (selectedTeamId) q.set("team", selectedTeamId);
+    const next = `${pathname}?${q.toString()}`;
+    if (`${pathname}?${searchParams.toString()}` !== next) {
+      router.replace(next, { scroll: false });
+    }
+  }, [dateInputValue, selectedTeamId, pathname, router, searchParams]);
 
   const onDateInput = useCallback((iso: string) => {
     if (!iso) return;
